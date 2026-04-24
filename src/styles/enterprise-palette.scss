@@ -1,0 +1,179 @@
+// Enterprise-style design tokens (YouTube-inspired brand accent + GitHub Primer–style neutrals).
+// Use CSS variables (--app-*) in components; use $app-* SCSS vars only inside stylesheets if needed.
+
+// -----------------------------------------------------------------------------
+// SCSS mirrors (compile-time)
+// -----------------------------------------------------------------------------
+
+// Brand (YouTube primary red family)
+$app-brand-primary: #ff0000;
+$app-brand-primary-hover: #e60000;
+$app-brand-primary-muted: rgba(255, 0, 0, 0.12);
+
+// GitHub-style light neutrals
+$app-light-canvas-default: #ffffff;
+$app-light-canvas-subtle: #f6f8fa;
+$app-light-border-default: #d0d7de;
+$app-light-border-muted: #d8dee4;
+$app-light-fg-default: #1f2328;
+$app-light-fg-muted: #656d76;
+$app-light-fg-subtle: #6e7781;
+
+// GitHub-style dark neutrals (surfaces similar to github.com dark)
+$app-dark-canvas-default: #0d1117;
+$app-dark-canvas-subtle: #161b22;
+$app-dark-canvas-inset: #010409;
+$app-dark-border-default: #30363d;
+$app-dark-border-muted: #21262d;
+$app-dark-fg-default: #e6edf3;
+$app-dark-fg-muted: #8b949e;
+$app-dark-fg-subtle: #6e7681;
+
+// Semantic (aligned with common enterprise / Primer-style roles)
+$app-success-fg: #1a7f37;
+$app-success-bg-muted: #dafbe1;
+$app-success-border: #4ac26b;
+$app-attention-fg: #9a6700;
+$app-attention-bg-muted: #fff8c5;
+$app-attention-border: #d4a72c;
+$app-danger-fg: #cf222e;
+$app-danger-bg-muted: #ffebe9;
+$app-danger-border: #ff8182;
+$app-accent-fg: #0969da;
+$app-accent-bg-muted: #ddf4ff;
+
+$app-success-fg-dark: #3fb950;
+$app-success-bg-muted-dark: rgba(46, 160, 67, 0.15);
+$app-attention-fg-dark: #d29922;
+$app-attention-bg-muted-dark: rgba(187, 128, 9, 0.15);
+$app-danger-fg-dark: #f85149;
+$app-danger-bg-muted-dark: rgba(248, 81, 73, 0.15);
+$app-accent-fg-dark: #58a6ff;
+$app-accent-bg-muted-dark: rgba(56, 139, 253, 0.15);
+
+// Focus ring (WCAG-friendly on both themes)
+$app-focus-ring: #0969da;
+$app-focus-ring-dark: #58a6ff;
+
+// -----------------------------------------------------------------------------
+// CSS custom properties (runtime theming)
+// Apply [data-theme="dark"] on <html> or a root layout wrapper.
+// -----------------------------------------------------------------------------
+
+:root {
+  color-scheme: light;
+
+  // Typography — GitHub-like system stack (fast, native); optional Roboto for product parity with Material/YouTube UIs
+  --app-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial,
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+  --app-font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', 'Liberation Mono', Menlo, Monaco,
+    Consolas, monospace;
+  --app-font-display: 'Roboto', var(--app-font-sans);
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --font-style-normal: normal;
+  --font-style-italic: italic;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
+
+  // Surfaces & text (light)
+  --app-canvas-default: #{$app-light-canvas-default};
+  --app-canvas-subtle: #{$app-light-canvas-subtle};
+  --app-canvas-inset: #{$app-light-canvas-subtle};
+  --app-fg-default: #{$app-light-fg-default};
+  --app-fg-muted: #{$app-light-fg-muted};
+  --app-fg-subtle: #{$app-light-fg-subtle};
+  --app-fg-on-brand: #ffffff;
+
+  --app-border-default: #{$app-light-border-default};
+  --app-border-muted: #{$app-light-border-muted};
+
+  // Brand
+  --app-brand: #{$app-brand-primary};
+  --app-brand-hover: #{$app-brand-primary-hover};
+  --app-brand-muted: #{$app-brand-primary-muted};
+
+  // Semantic (light)
+  --app-success-fg: #{$app-success-fg};
+  --app-success-bg: #{$app-success-bg-muted};
+  --app-success-border: #{$app-success-border};
+  --app-attention-fg: #{$app-attention-fg};
+  --app-attention-bg: #{$app-attention-bg-muted};
+  --app-attention-border: #{$app-attention-border};
+  --app-danger-fg: #{$app-danger-fg};
+  --app-danger-bg: #{$app-danger-bg-muted};
+  --app-danger-border: #{$app-danger-border};
+  --app-accent-fg: #{$app-accent-fg};
+  --app-accent-bg: #{$app-accent-bg-muted};
+
+  --app-link: #{$app-accent-fg};
+  --app-link-hover: #0550ae;
+
+  --app-focus-ring: #{$app-focus-ring};
+  --app-shadow-color: rgba(31, 35, 40, 0.12);
+  --app-overlay-scrim: rgba(31, 35, 40, 0.5);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --app-canvas-default: #{$app-dark-canvas-default};
+  --app-canvas-subtle: #{$app-dark-canvas-subtle};
+  --app-canvas-inset: #{$app-dark-canvas-inset};
+  --app-fg-default: #{$app-dark-fg-default};
+  --app-fg-muted: #{$app-dark-fg-muted};
+  --app-fg-subtle: #{$app-dark-fg-subtle};
+  --app-fg-on-brand: #ffffff;
+
+  --app-border-default: #{$app-dark-border-default};
+  --app-border-muted: #{$app-dark-border-muted};
+
+  --app-brand-muted: rgba(255, 0, 0, 0.2);
+
+  --app-success-fg: #{$app-success-fg-dark};
+  --app-success-bg: #{$app-success-bg-muted-dark};
+  --app-success-border: #238636;
+  --app-attention-fg: #{$app-attention-fg-dark};
+  --app-attention-bg: #{$app-attention-bg-muted-dark};
+  --app-attention-border: #{$app-attention-fg-dark};
+  --app-danger-fg: #{$app-danger-fg-dark};
+  --app-danger-bg: #{$app-danger-bg-muted-dark};
+  --app-danger-border: #{$app-danger-fg-dark};
+  --app-accent-fg: #{$app-accent-fg-dark};
+  --app-accent-bg: #{$app-accent-bg-muted-dark};
+
+  --app-link: #{$app-accent-fg-dark};
+  --app-link-hover: #79c0ff;
+
+  --app-focus-ring: #{$app-focus-ring-dark};
+  --app-shadow-color: rgba(0, 0, 0, 0.45);
+  --app-overlay-scrim: rgba(1, 4, 9, 0.65);
+}
+
+// Optional: base typography defaults (opt-in by applying .app-root or body class in app)
+@mixin app-typography-base {
+  font-family: var(--app-font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-weight-regular);
+  color: var(--app-fg-default);
+  background-color: var(--app-canvas-default);
+}

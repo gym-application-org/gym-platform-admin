@@ -1,0 +1,149 @@
+<main class="dashboard" aria-labelledby="dashboard-title">
+  <header class="dashboard__header">
+    <div>
+      <h1 id="dashboard-title" class="dashboard__title">Dashboard</h1>
+      <p class="dashboard__lede">
+        Overview of your platform. Use the sidebar or quick links below to open each area.
+      </p>
+    </div>
+    <app-button
+      variant="secondary"
+      type="button"
+      [loading]="refreshLoading()"
+      [disabled]="loading() || refreshLoading()"
+      (clicked)="refresh()"
+    >
+      Refresh
+    </app-button>
+  </header>
+
+  @if (loadError()) {
+    <div class="dashboard__banner" role="alert">
+      {{ loadError() }}
+    </div>
+  }
+
+  <section class="dashboard__section" aria-labelledby="overview-heading">
+    <h2 id="overview-heading" class="dashboard__section-title">Overview</h2>
+    <div
+      class="dashboard__stat-grid"
+      [attr.aria-busy]="loading() ? 'true' : null"
+    >
+      @if (loading()) {
+        @for (_ of [1, 2, 3, 4, 5, 6, 7]; track _) {
+          <div class="stat-card stat-card--skeleton" aria-hidden="true">
+            <span class="stat-card__skeleton-line stat-card__skeleton-line--short"></span>
+            <span class="stat-card__skeleton-line stat-card__skeleton-line--long"></span>
+          </div>
+        }
+      } @else {
+        @let c = counts();
+        <article class="stat-card">
+          <h3 class="stat-card__label">Tenants</h3>
+          <p class="stat-card__value">{{ c?.tenants ?? '—' }}</p>
+        </article>
+        <article class="stat-card">
+          <h3 class="stat-card__label">Members</h3>
+          <p class="stat-card__value">{{ c?.members ?? '—' }}</p>
+        </article>
+        <article class="stat-card">
+          <h3 class="stat-card__label">Staff</h3>
+          <p class="stat-card__value">{{ c?.staff ?? '—' }}</p>
+        </article>
+        <article class="stat-card">
+          <h3 class="stat-card__label">Gates</h3>
+          <p class="stat-card__value">{{ c?.gates ?? '—' }}</p>
+        </article>
+        <article class="stat-card">
+          <h3 class="stat-card__label">Exercises</h3>
+          <p class="stat-card__value">{{ c?.exercises ?? '—' }}</p>
+        </article>
+        <article class="stat-card stat-card--accent">
+          <h3 class="stat-card__label">Open tickets</h3>
+          <p class="stat-card__value">{{ c?.ticketsOpen ?? '—' }}</p>
+        </article>
+        @if (showUsersLink()) {
+          <article class="stat-card">
+            <h3 class="stat-card__label">Users</h3>
+            <p class="stat-card__value">{{ c?.users ?? '—' }}</p>
+          </article>
+        }
+      }
+    </div>
+  </section>
+
+  <div class="dashboard__two-col">
+    <section class="dashboard__section" aria-labelledby="recent-heading">
+      <div class="dashboard__section-head">
+        <h2 id="recent-heading" class="dashboard__section-title">Recent check-ins</h2>
+        <a routerLink="/attendance-logs" class="dashboard__section-link">View all</a>
+      </div>
+      @if (loading()) {
+        <div class="dashboard__table-wrap" aria-hidden="true">
+          <div class="dashboard__skeleton-row"></div>
+          <div class="dashboard__skeleton-row"></div>
+          <div class="dashboard__skeleton-row"></div>
+        </div>
+      } @else if (recentLogs().length === 0) {
+        <p class="dashboard__empty">No attendance events yet.</p>
+      } @else {
+        <div class="dashboard__table-wrap">
+          <table class="dashboard__table">
+            <thead>
+              <tr>
+                <th scope="col">Time</th>
+                <th scope="col">Member</th>
+                <th scope="col">Gate</th>
+                <th scope="col">Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (log of recentLogs(); track log.id) {
+                <tr>
+                  <td>
+                    <time [attr.datetime]="log.timestamp">{{
+                      log.timestamp | date: 'short'
+                    }}</time>
+                  </td>
+                  <td class="dashboard__mono">{{ log.memberId }}</td>
+                  <td>{{ log.gateId }}</td>
+                  <td>
+                    <span
+                      class="dashboard__badge"
+                      [class.dashboard__badge--ok]="
+                        log.result === AttendanceResult.Allowed
+                      "
+                      [class.dashboard__badge--denied]="
+                        log.result === AttendanceResult.Denied
+                      "
+                    >
+                      {{
+                        log.result === AttendanceResult.Allowed
+                          ? 'Allowed'
+                          : 'Denied'
+                      }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <section class="dashboard__section" aria-labelledby="quick-heading">
+      <h2 id="quick-heading" class="dashboard__section-title">Quick links</h2>
+      <ul class="dashboard__link-list">
+        @for (link of quickLinks(); track link.path) {
+          <li>
+            <a [routerLink]="link.path" class="dashboard__quick-link">
+              <span class="dashboard__quick-link-label">{{ link.label }}</span>
+              <span class="dashboard__quick-link-desc">{{ link.description }}</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+</main>

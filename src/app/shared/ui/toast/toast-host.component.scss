@@ -1,0 +1,110 @@
+:host {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 1rem;
+  max-width: min(100vw - 2rem, 24rem);
+  pointer-events: none;
+}
+
+.toast-host {
+  display: contents;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 0.75rem 0.875rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--toast-border, var(--app-border-default));
+  background: var(--toast-bg, var(--app-canvas-default));
+  color: var(--toast-fg, var(--app-fg-default));
+  font-family: var(--app-font-sans);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  box-shadow: 0 4px 12px var(--app-shadow-color);
+  pointer-events: auto;
+  min-height: 2.75rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toast {
+    animation: toast-in 0.2s ease-out;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast__text {
+  flex: 1;
+  padding-block: 0.125rem;
+}
+
+.toast__dismiss {
+  flex-shrink: 0;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: -0.25rem -0.25rem -0.25rem 0;
+  border: none;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: inherit;
+  font-size: var(--text-xl);
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.toast__dismiss:hover {
+  opacity: 1;
+}
+
+.toast__dismiss:focus-visible {
+  outline: 2px solid var(--app-focus-ring);
+  outline-offset: 2px;
+}
+
+.toast--success {
+  --toast-bg: var(--app-success-bg);
+  --toast-fg: var(--app-success-fg);
+  --toast-border: var(--app-success-border);
+}
+
+.toast--danger {
+  --toast-bg: var(--app-danger-bg);
+  --toast-fg: var(--app-danger-fg);
+  --toast-border: var(--app-danger-border);
+}
+
+.toast--attention {
+  --toast-bg: var(--app-attention-bg);
+  --toast-fg: var(--app-attention-fg);
+  --toast-border: var(--app-attention-border);
+}
+
+.toast--accent {
+  --toast-bg: var(--app-accent-bg);
+  --toast-fg: var(--app-accent-fg);
+  --toast-border: var(--app-accent-fg);
+}
+
+.toast--neutral {
+  --toast-bg: var(--app-canvas-default);
+  --toast-fg: var(--app-fg-default);
+  --toast-border: var(--app-border-default);
+}

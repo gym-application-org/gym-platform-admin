@@ -1,0 +1,46 @@
+<div class="um-shell">
+  <header class="um-shell__header">
+    <h1 class="um-shell__title">User management</h1>
+    <p class="um-shell__lead">
+      Accounts, permission catalog, assignments, and how platform roles relate to operation claims.
+    </p>
+  </header>
+
+  <nav class="um-shell__tabs" aria-label="User management sections">
+    <a
+      routerLink="/user-management/users"
+      routerLinkActive="um-shell__tab--active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="um-shell__tab"
+    >
+      Accounts
+    </a>
+    @if (showSecurityTabs()) {
+      <a
+        routerLink="/user-management/operation-claims"
+        routerLinkActive="um-shell__tab--active"
+        class="um-shell__tab"
+      >
+        Operation claims
+      </a>
+      <a
+        routerLink="/user-management/user-operation-claims"
+        routerLinkActive="um-shell__tab--active"
+        class="um-shell__tab"
+      >
+        Assignments
+      </a>
+    }
+    <a
+      routerLink="/user-management/roles"
+      routerLinkActive="um-shell__tab--active"
+      class="um-shell__tab"
+    >
+      Roles &amp; claims
+    </a>
+  </nav>
+
+  <div class="um-shell__outlet">
+    <router-outlet />
+  </div>
+</div>

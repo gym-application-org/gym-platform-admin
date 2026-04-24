@@ -1,0 +1,545 @@
+<div class="exercises-page">
+  <header class="exercises-page__hero">
+    <div class="exercises-page__hero-text">
+      <h1 class="exercises-page__title">Exercise library</h1>
+      <p class="exercises-page__subtitle">
+        Global exercises for programs and workouts. Search applies to the current page of results.
+      </p>
+    </div>
+    <app-button type="button" variant="primary" (clicked)="openCreate()">Add exercise</app-button>
+  </header>
+
+  <section class="exercises-page__toolbar" aria-label="List filters">
+    <div class="exercises-page__search">
+      <label class="exercises-page__label" for="exercise-search">Search</label>
+      <input
+        id="exercise-search"
+        type="search"
+        class="exercises-page__input"
+        placeholder="Name, muscle group, equipment…"
+        [value]="searchQuery()"
+        (input)="onSearchInputEvent($event)"
+        autocomplete="off"
+        aria-describedby="exercise-search-hint"
+      />
+      <p id="exercise-search-hint" class="exercises-page__hint">Filters the loaded page only.</p>
+    </div>
+    <div class="exercises-page__page-size">
+      <label class="exercises-page__label" for="exercise-page-size">Rows per page</label>
+      <select
+        id="exercise-page-size"
+        class="exercises-page__select"
+        [value]="pageSize()"
+        (change)="onPageSizeChange($event)"
+      >
+        <option [value]="10">10</option>
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
+      </select>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="exercises-page__state" role="status" aria-live="polite" aria-busy="true">
+      <div class="exercises-page__skeleton-grid" aria-hidden="true">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="exercises-page__skeleton-card">
+            <div class="exercises-page__skeleton-shine"></div>
+            <div class="exercises-page__skeleton-lines">
+              <div class="exercises-page__skeleton-line exercises-page__skeleton-line--lg"></div>
+              <div class="exercises-page__skeleton-line"></div>
+              <div class="exercises-page__skeleton-line exercises-page__skeleton-line--sm"></div>
+            </div>
+          </div>
+        }
+      </div>
+      <span class="sr-only">Loading exercises</span>
+    </div>
+  } @else if (!filteredItems().length) {
+    <div class="exercises-page__empty">
+      <p class="exercises-page__empty-title">No exercises to show</p>
+      <p class="exercises-page__empty-text">
+        @if (searchQuery().trim()) {
+          Try clearing the search or change page.
+        } @else {
+          Create an exercise to build your library.
+        }
+      </p>
+      @if (!searchQuery().trim()) {
+        <app-button type="button" variant="primary" (clicked)="openCreate()">Add exercise</app-button>
+      }
+    </div>
+  } @else {
+    <div class="exercises-page__table-wrap">
+      <table class="exercises-page__table">
+        <thead>
+          <tr>
+            <th scope="col" class="exercises-page__th-thumb"><span class="sr-only">Preview</span></th>
+            <th scope="col">Name</th>
+            <th scope="col">Muscle group</th>
+            <th scope="col">Equipment</th>
+            <th scope="col">Difficulty</th>
+            <th scope="col">Active</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ex of filteredItems(); track ex.id) {
+            <tr>
+              <td class="exercises-page__td-thumb">
+                @if (ex.thumbnailUrl.trim()) {
+                  <img
+                    class="exercises-page__thumb"
+                    [src]="ex.thumbnailUrl"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
+                } @else {
+                  <span class="exercises-page__thumb-placeholder" aria-hidden="true"></span>
+                }
+              </td>
+              <td data-label="Name">
+                <span class="exercises-page__cell-name">{{ ex.name }}</span>
+              </td>
+              <td data-label="Muscle">{{ ex.muscleGroup }}</td>
+              <td data-label="Equipment">{{ ex.equipment }}</td>
+              <td data-label="Difficulty">
+                <span
+                  class="exercises-page__pill"
+                  [class.exercises-page__pill--beginner]="difficultyModifier(ex.difficultyLevel) === 'beginner'"
+                  [class.exercises-page__pill--intermediate]="
+                    difficultyModifier(ex.difficultyLevel) === 'intermediate'
+                  "
+                  [class.exercises-page__pill--advanced]="difficultyModifier(ex.difficultyLevel) === 'advanced'"
+                >
+                  {{ difficultyLabel(ex.difficultyLevel) }}
+                </span>
+              </td>
+              <td data-label="Active">
+                <span
+                  class="exercises-page__badge"
+                  [class.exercises-page__badge--on]="ex.isActive"
+                  [class.exercises-page__badge--off]="!ex.isActive"
+                >
+                  {{ ex.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="exercises-page__actions">
+                <app-button type="button" variant="tertiary" (clicked)="openDetail(ex)">View</app-button>
+                <app-button type="button" variant="tertiary" (clicked)="openEdit(ex)">Edit</app-button>
+                <app-button type="button" variant="danger" (clicked)="confirmDelete(ex)">Delete</app-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="exercises-page__cards" role="list">
+      @for (ex of filteredItems(); track ex.id) {
+        <article class="exercises-page__card" role="listitem">
+          <div class="exercises-page__card-media">
+            @if (ex.thumbnailUrl.trim()) {
+              <img
+                class="exercises-page__card-img"
+                [src]="ex.thumbnailUrl"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+            } @else {
+              <div class="exercises-page__card-img exercises-page__card-img--empty" aria-hidden="true"></div>
+            }
+          </div>
+          <div class="exercises-page__card-body">
+            <div class="exercises-page__card-head">
+              <h2 class="exercises-page__card-title">{{ ex.name }}</h2>
+              <span
+                class="exercises-page__pill"
+                [class.exercises-page__pill--beginner]="difficultyModifier(ex.difficultyLevel) === 'beginner'"
+                [class.exercises-page__pill--intermediate]="
+                  difficultyModifier(ex.difficultyLevel) === 'intermediate'
+                "
+                [class.exercises-page__pill--advanced]="difficultyModifier(ex.difficultyLevel) === 'advanced'"
+              >
+                {{ difficultyLabel(ex.difficultyLevel) }}
+              </span>
+            </div>
+            <dl class="exercises-page__card-dl">
+              <div>
+                <dt>Muscle</dt>
+                <dd>{{ ex.muscleGroup }}</dd>
+              </div>
+              <div>
+                <dt>Equipment</dt>
+                <dd>{{ ex.equipment }}</dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>
+                  <span
+                    class="exercises-page__badge"
+                    [class.exercises-page__badge--on]="ex.isActive"
+                    [class.exercises-page__badge--off]="!ex.isActive"
+                  >
+                    {{ ex.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+            <div class="exercises-page__card-actions">
+              <app-button type="button" variant="tertiary" (clicked)="openDetail(ex)">View</app-button>
+              <app-button type="button" variant="tertiary" (clicked)="openEdit(ex)">Edit</app-button>
+              <app-button type="button" variant="danger" (clicked)="confirmDelete(ex)">Delete</app-button>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+
+    <nav class="exercises-page__pager" aria-label="Pagination">
+      <app-button type="button" variant="secondary" [disabled]="!hasPrevious()" (clicked)="goPrev()">
+        Previous
+      </app-button>
+      <p class="exercises-page__pager-info">
+        Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+        <span> · {{ totalCount() }} total</span>
+      </p>
+      <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+        Next
+      </app-button>
+    </nav>
+  }
+</div>
+
+<!-- Create -->
+<dialog
+  #createDialog
+  class="exercises-page__dialog"
+  aria-labelledby="create-exercise-title"
+  (click)="onCreateBackdrop($event)"
+>
+  <div class="exercises-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="exercises-page__dialog-head">
+      <h2 id="create-exercise-title" class="exercises-page__dialog-title">New exercise</h2>
+      <button
+        type="button"
+        class="exercises-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeCreate()"
+      >
+        ×
+      </button>
+    </header>
+    <form class="exercises-page__dialog-body" [formGroup]="createForm" (ngSubmit)="submitCreate()">
+      <app-text-field
+        formControlName="name"
+        label="Name"
+        [required]="true"
+        [error]="createFieldError('name')"
+        autocomplete="off"
+      />
+      <app-textarea-field
+        formControlName="description"
+        label="Description"
+        [required]="true"
+        [error]="createFieldError('description')"
+        [rows]="4"
+      />
+      <div class="exercises-page__dialog-row">
+        <div class="exercises-page__dialog-field-grow">
+          <app-text-field
+            formControlName="muscleGroup"
+            label="Muscle group"
+            [required]="true"
+            [error]="createFieldError('muscleGroup')"
+          />
+        </div>
+        <div class="exercises-page__dialog-field-grow">
+          <app-text-field
+            formControlName="equipment"
+            label="Equipment"
+            [required]="true"
+            [error]="createFieldError('equipment')"
+          />
+        </div>
+      </div>
+      <app-select-field
+        formControlName="difficultyLevel"
+        label="Difficulty"
+        [required]="true"
+        [options]="difficultyOptions"
+        [error]="createDifficultyError()"
+      />
+      <div class="exercises-page__dialog-row">
+        <div class="exercises-page__dialog-field-grow">
+          <app-text-field
+            formControlName="videoUrl"
+            label="Video URL"
+            type="url"
+            [error]="createFieldError('videoUrl')"
+            hint="Optional. HTTPS link to demonstration video."
+          />
+        </div>
+        <div class="exercises-page__dialog-field-grow">
+          <app-text-field
+            formControlName="thumbnailUrl"
+            label="Thumbnail URL"
+            type="url"
+            [error]="createFieldError('thumbnailUrl')"
+            hint="Optional. Image used in lists and cards."
+          />
+        </div>
+      </div>
+      <div class="exercises-page__field">
+        <label class="exercises-page__checkbox-label" for="create-active">
+          <input
+            id="create-active"
+            type="checkbox"
+            formControlName="isActive"
+            class="exercises-page__checkbox"
+          />
+          Active
+        </label>
+      </div>
+      <footer class="exercises-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeCreate()">Cancel</app-button>
+        <app-button type="submit" variant="primary" [loading]="createSubmitting()" [disabled]="createSubmitting()">
+          Create
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<!-- Edit -->
+<dialog
+  #editDialog
+  class="exercises-page__dialog"
+  aria-labelledby="edit-exercise-title"
+  (click)="onEditBackdrop($event)"
+>
+  <div class="exercises-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="exercises-page__dialog-head">
+      <h2 id="edit-exercise-title" class="exercises-page__dialog-title">Edit exercise</h2>
+      <button
+        type="button"
+        class="exercises-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeEdit()"
+      >
+        ×
+      </button>
+    </header>
+    <form class="exercises-page__dialog-body" [formGroup]="editForm" (ngSubmit)="submitEdit()">
+      <app-text-field
+        formControlName="name"
+        label="Name"
+        [required]="true"
+        [error]="editFieldError('name')"
+      />
+      <app-textarea-field
+        formControlName="description"
+        label="Description"
+        [required]="true"
+        [error]="editFieldError('description')"
+        [rows]="4"
+      />
+      <div class="exercises-page__dialog-row">
+        <div class="exercises-page__dialog-field-grow">
+          <app-text-field
+            formControlName="muscleGroup"
+            label="Muscle group"
+            [required]="true"
+            [error]="editFieldError('muscleGroup')"
+          />
+        </div>
+        <div class="exercises-page__dialog-field-grow">
+          <app-text-field
+            formControlName="equipment"
+            label="Equipment"
+            [required]="true"
+            [error]="editFieldError('equipment')"
+          />
+        </div>
+      </div>
+      <app-select-field
+        formControlName="difficultyLevel"
+        label="Difficulty"
+        [required]="true"
+        [options]="difficultyOptions"
+        [error]="editDifficultyError()"
+      />
+      <div class="exercises-page__dialog-row">
+        <div class="exercises-page__dialog-field-grow">
+          <app-text-field
+            formControlName="videoUrl"
+            label="Video URL"
+            type="url"
+            [error]="editFieldError('videoUrl')"
+          />
+        </div>
+        <div class="exercises-page__dialog-field-grow">
+          <app-text-field
+            formControlName="thumbnailUrl"
+            label="Thumbnail URL"
+            type="url"
+            [error]="editFieldError('thumbnailUrl')"
+          />
+        </div>
+      </div>
+      <div class="exercises-page__field">
+        <label class="exercises-page__checkbox-label" for="edit-active">
+          <input id="edit-active" type="checkbox" formControlName="isActive" class="exercises-page__checkbox" />
+          Active
+        </label>
+      </div>
+      <footer class="exercises-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeEdit()">Cancel</app-button>
+        <app-button type="submit" variant="primary" [loading]="editSubmitting()" [disabled]="editSubmitting()">
+          Save
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<!-- Detail (from row; no extra API) -->
+<dialog
+  #detailDialog
+  class="exercises-page__dialog"
+  aria-labelledby="detail-exercise-title"
+  (click)="onDetailBackdrop($event)"
+>
+  <div class="exercises-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="exercises-page__dialog-head">
+      <h2 id="detail-exercise-title" class="exercises-page__dialog-title">Exercise details</h2>
+      <button
+        type="button"
+        class="exercises-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDetail()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="exercises-page__dialog-body">
+      @if (detailExercise(); as d) {
+        <div class="exercises-page__detail-layout">
+          @if (d.thumbnailUrl.trim()) {
+            <div class="exercises-page__detail-media">
+              <img
+                class="exercises-page__detail-img"
+                [src]="d.thumbnailUrl"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          }
+          <div class="exercises-page__detail-main">
+            <h3 class="exercises-page__detail-name">{{ d.name }}</h3>
+            <p class="exercises-page__detail-desc">{{ d.description }}</p>
+            <dl class="exercises-page__detail-dl">
+              <div>
+                <dt>Muscle group</dt>
+                <dd>{{ d.muscleGroup }}</dd>
+              </div>
+              <div>
+                <dt>Equipment</dt>
+                <dd>{{ d.equipment }}</dd>
+              </div>
+              <div>
+                <dt>Difficulty</dt>
+                <dd>
+                  <span
+                    class="exercises-page__pill"
+                    [class.exercises-page__pill--beginner]="difficultyModifier(d.difficultyLevel) === 'beginner'"
+                    [class.exercises-page__pill--intermediate]="
+                      difficultyModifier(d.difficultyLevel) === 'intermediate'
+                    "
+                    [class.exercises-page__pill--advanced]="difficultyModifier(d.difficultyLevel) === 'advanced'"
+                  >
+                    {{ difficultyLabel(d.difficultyLevel) }}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt>Status</dt>
+                <dd>
+                  <span
+                    class="exercises-page__badge"
+                    [class.exercises-page__badge--on]="d.isActive"
+                    [class.exercises-page__badge--off]="!d.isActive"
+                  >
+                    {{ d.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </dd>
+              </div>
+              @if (d.videoUrl.trim()) {
+                <div class="exercises-page__detail-link-row">
+                  <dt>Video</dt>
+                  <dd>
+                    <a class="exercises-page__link" [href]="d.videoUrl" target="_blank" rel="noopener noreferrer">
+                      Open video
+                    </a>
+                  </dd>
+                </div>
+              }
+              <div>
+                <dt>Id</dt>
+                <dd><code class="exercises-page__code">{{ d.id }}</code></dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      }
+      <footer class="exercises-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDetail()">Close</app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>
+
+<!-- Delete -->
+<dialog
+  #deleteDialog
+  class="exercises-page__dialog exercises-page__dialog--narrow"
+  aria-labelledby="delete-exercise-title"
+  aria-describedby="delete-exercise-desc"
+  (click)="onDeleteBackdrop($event)"
+>
+  <div class="exercises-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="exercises-page__dialog-head">
+      <h2 id="delete-exercise-title" class="exercises-page__dialog-title">Delete exercise</h2>
+      <button
+        type="button"
+        class="exercises-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDelete()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="exercises-page__dialog-body">
+      <p id="delete-exercise-desc" class="exercises-page__delete-text">
+        @if (exercisePendingDelete(); as del) {
+          Permanently remove <strong>{{ del.name }}</strong>? This cannot be undone.
+        }
+      </p>
+      <footer class="exercises-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDelete()">Cancel</app-button>
+        <app-button
+          type="button"
+          variant="danger"
+          [loading]="deleteSubmitting()"
+          [disabled]="deleteSubmitting()"
+          (clicked)="submitDelete()"
+        >
+          Delete
+        </app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>

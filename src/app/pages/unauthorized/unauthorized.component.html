@@ -1,0 +1,15 @@
+<app-status-page
+  code="403"
+  title="Access denied"
+  description="You don't have permission to view this page. If you expected access, ask an administrator to update your role."
+>
+  @if (isAdmin() !== null) {
+    <app-button type="button" (clicked)="goHome()">
+      @if (isAdmin()) {
+        Go to home
+      } @else {
+        Go to login page
+      }
+    </app-button>
+  }
+</app-status-page>

@@ -1,0 +1,230 @@
+<section class="oc-page" aria-labelledby="oc-page-title">
+  <div class="oc-page__head">
+    <div>
+      <h2 id="oc-page-title" class="oc-page__title">Operation claims catalog</h2>
+      <p class="oc-page__desc">
+        Named permissions used across the API. User-specific assignments are managed under Accounts or Assignments.
+      </p>
+    </div>
+    @if (canEdit()) {
+      <app-button type="button" variant="primary" (clicked)="openCreate()">Add claim</app-button>
+    }
+  </div>
+
+  @if (!canRead()) {
+    <p class="oc-page__denied" role="status">You do not have access to view operation claims.</p>
+  } @else {
+    <div class="oc-page__toolbar" aria-label="Filters">
+      <div class="oc-page__search">
+        <label class="oc-page__label" for="oc-search">Search</label>
+        <input
+          id="oc-search"
+          type="search"
+          class="oc-page__input"
+          placeholder="Name or id…"
+          [value]="searchQuery()"
+          (input)="onSearchInputEvent($event)"
+          autocomplete="off"
+        />
+      </div>
+      <div class="oc-page__page-size">
+        <label class="oc-page__label" for="oc-page-size">Rows per page</label>
+        <select
+          id="oc-page-size"
+          class="oc-page__select"
+          [value]="pageSize()"
+          (change)="onPageSizeChange($event)"
+        >
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+        </select>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="oc-page__state" role="status" aria-busy="true">
+        <div class="oc-page__skeleton-list" aria-hidden="true">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="oc-page__skeleton-row"></div>
+          }
+        </div>
+        <span class="sr-only">Loading</span>
+      </div>
+    } @else if (!filteredItems().length) {
+      <div class="oc-page__empty">
+        <p class="oc-page__empty-title">No claims on this page</p>
+        <p class="oc-page__empty-text">Try another page or clear search.</p>
+      </div>
+    } @else {
+      <div class="oc-page__table-wrap">
+        <table class="oc-page__table">
+          <thead>
+            <tr>
+              <th scope="col">Id</th>
+              <th scope="col">Name</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (claim of filteredItems(); track claim.id) {
+              <tr>
+                <td data-label="Id"><code class="oc-page__code">{{ claim.id }}</code></td>
+                <td data-label="Name">{{ claim.name }}</td>
+                <td class="oc-page__actions">
+                  @if (canEdit()) {
+                    <app-button type="button" variant="tertiary" (clicked)="openEdit(claim)">
+                      Edit
+                    </app-button>
+                    <app-button type="button" variant="danger" (clicked)="confirmDelete(claim)">
+                      Delete
+                    </app-button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="oc-page__cards" role="list">
+        @for (claim of filteredItems(); track claim.id) {
+          <article class="oc-page__card" role="listitem">
+            <h3 class="oc-page__card-title">{{ claim.name }}</h3>
+            <p class="oc-page__card-meta"><code class="oc-page__code">#{{ claim.id }}</code></p>
+            @if (canEdit()) {
+              <div class="oc-page__card-actions">
+                <app-button type="button" variant="tertiary" (clicked)="openEdit(claim)">
+                  Edit
+                </app-button>
+                <app-button type="button" variant="danger" (clicked)="confirmDelete(claim)">
+                  Delete
+                </app-button>
+              </div>
+            }
+          </article>
+        }
+      </div>
+
+      <nav class="oc-page__pager" aria-label="Pagination">
+        <app-button type="button" variant="secondary" [disabled]="!hasPrevious()" (clicked)="goPrev()">
+          Previous
+        </app-button>
+        <p class="oc-page__pager-info">
+          Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+          <span> · {{ totalCount() }} total</span>
+        </p>
+        <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+          Next
+        </app-button>
+      </nav>
+    }
+  }
+</section>
+
+<dialog
+  #createDialog
+  class="oc-page__dialog"
+  aria-labelledby="oc-create-title"
+  (click)="onCreateBackdrop($event)"
+>
+  <div class="oc-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="oc-page__dialog-head">
+      <h2 id="oc-create-title" class="oc-page__dialog-title">New operation claim</h2>
+      <button type="button" class="oc-page__dialog-close" aria-label="Close dialog" (click)="closeCreate()">
+        ×
+      </button>
+    </header>
+    <form class="oc-page__dialog-body" [formGroup]="createForm" (ngSubmit)="submitCreate()">
+      <app-text-field
+        formControlName="name"
+        label="Name"
+        [required]="true"
+        [error]="createNameError()"
+        hint="Stable identifier string, e.g. users.read"
+      />
+      <footer class="oc-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeCreate()">Cancel</app-button>
+        <app-button
+          type="submit"
+          variant="primary"
+          [loading]="createSubmitting()"
+          [disabled]="createSubmitting()"
+        >
+          Create
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<dialog
+  #editDialog
+  class="oc-page__dialog"
+  aria-labelledby="oc-edit-title"
+  (click)="onEditBackdrop($event)"
+>
+  <div class="oc-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="oc-page__dialog-head">
+      <h2 id="oc-edit-title" class="oc-page__dialog-title">Edit operation claim</h2>
+      <button type="button" class="oc-page__dialog-close" aria-label="Close dialog" (click)="closeEdit()">
+        ×
+      </button>
+    </header>
+    <form class="oc-page__dialog-body" [formGroup]="editForm" (ngSubmit)="submitEdit()">
+      <app-text-field
+        formControlName="name"
+        label="Name"
+        [required]="true"
+        [error]="editNameError()"
+      />
+      <footer class="oc-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeEdit()">Cancel</app-button>
+        <app-button
+          type="submit"
+          variant="primary"
+          [loading]="editSubmitting()"
+          [disabled]="editSubmitting()"
+        >
+          Save
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<dialog
+  #deleteDialog
+  class="oc-page__dialog oc-page__dialog--narrow"
+  aria-labelledby="oc-del-title"
+  aria-describedby="oc-del-desc"
+  (click)="onDeleteBackdrop($event)"
+>
+  <div class="oc-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="oc-page__dialog-head">
+      <h2 id="oc-del-title" class="oc-page__dialog-title">Delete operation claim</h2>
+      <button type="button" class="oc-page__dialog-close" aria-label="Close dialog" (click)="closeDelete()">
+        ×
+      </button>
+    </header>
+    <div class="oc-page__dialog-body">
+      <p id="oc-del-desc" class="oc-page__delete-text">
+        @if (claimPendingDelete(); as c) {
+          Remove <strong>{{ c.name }}</strong> (id {{ c.id }})? Linked user assignments may break.
+        }
+      </p>
+      <footer class="oc-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDelete()">Cancel</app-button>
+        <app-button
+          type="button"
+          variant="danger"
+          [loading]="deleteSubmitting()"
+          [disabled]="deleteSubmitting()"
+          (clicked)="submitDelete()"
+        >
+          Delete
+        </app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>

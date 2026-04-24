@@ -1,0 +1,278 @@
+<div class="members-page">
+  <header class="members-page__header">
+    <div class="members-page__title-block">
+      <h1 class="members-page__title">Members</h1>
+      <p class="members-page__subtitle">
+        Read-only directory of gym members. Filter by organization or status; search applies to the
+        current page of results.
+      </p>
+    </div>
+  </header>
+
+  <section class="members-page__filters" aria-label="Filters">
+    <div class="members-page__filters-inner">
+      <div class="members-page__field">
+        <label class="members-page__label" for="member-filter-tenant">Organization</label>
+        <select
+          id="member-filter-tenant"
+          class="members-page__select"
+          [value]="filterTenantId()"
+          [disabled]="tenantsLoading()"
+          (change)="onTenantFilterChange($event)"
+          aria-describedby="member-filter-tenant-hint"
+        >
+          <option value="">All organizations</option>
+          @for (opt of tenantOptions(); track opt.id) {
+            <option [value]="opt.id">{{ opt.name }}</option>
+          }
+        </select>
+        <p id="member-filter-tenant-hint" class="members-page__field-hint">
+          @if (tenantsLoading()) {
+            Loading organizations…
+          } @else {
+            Narrow the list to one tenant (first 100 organizations).
+          }
+        </p>
+      </div>
+
+      <div class="members-page__field">
+        <label class="members-page__label" for="member-filter-status">Status</label>
+        <select
+          id="member-filter-status"
+          class="members-page__select"
+          [value]="filterStatus() === '' ? '' : filterStatus().toString()"
+          (change)="onStatusFilterChange($event)"
+          aria-describedby="member-filter-status-hint"
+        >
+          <option value="">All statuses</option>
+          <option [value]="memberStatusEnum.Active">{{ statusLabels[memberStatusEnum.Active] }}</option>
+          <option [value]="memberStatusEnum.Suspended">{{ statusLabels[memberStatusEnum.Suspended] }}</option>
+          <option [value]="memberStatusEnum.Pending">{{ statusLabels[memberStatusEnum.Pending] }}</option>
+        </select>
+        <p id="member-filter-status-hint" class="members-page__field-hint">
+          Filter by active, suspended, or pending.
+        </p>
+      </div>
+
+      <div class="members-page__field members-page__field--grow">
+        <label class="members-page__label" for="member-search">Search</label>
+        <input
+          id="member-search"
+          type="search"
+          class="members-page__search-input"
+          placeholder="Name, email, phone…"
+          [value]="searchQuery()"
+          (input)="onSearchInputEvent($event)"
+          autocomplete="off"
+          aria-describedby="member-search-hint"
+        />
+        <p id="member-search-hint" class="members-page__field-hint">Filters the loaded page only.</p>
+      </div>
+
+      <div class="members-page__field members-page__field--compact">
+        <label class="members-page__label" for="member-page-size">Rows</label>
+        <select
+          id="member-page-size"
+          class="members-page__select"
+          [value]="pageSize()"
+          (change)="onPageSizeChange($event)"
+          aria-describedby="member-page-size-hint"
+        >
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+        </select>
+        <p id="member-page-size-hint" class="members-page__field-hint">Results per page.</p>
+      </div>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="members-page__state" role="status" aria-live="polite" aria-busy="true">
+      <div class="members-page__skeleton-list" aria-hidden="true">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="members-page__skeleton-row"></div>
+        }
+      </div>
+      <span class="sr-only">Loading members</span>
+    </div>
+  } @else if (!filteredItems().length) {
+    <div class="members-page__empty">
+      <p class="members-page__empty-title">No members to show</p>
+      <p class="members-page__empty-text">
+        @if (searchQuery().trim()) {
+          Try clearing the search or adjust filters.
+        } @else {
+          Change filters or page size, or check another organization.
+        }
+      </p>
+    </div>
+  } @else {
+    <div class="members-page__table-wrap">
+      <table class="members-page__table">
+        <thead>
+          <tr>
+            <th scope="col">Member</th>
+            <th scope="col">Contact</th>
+            <th scope="col">Organization</th>
+            <th scope="col">Status</th>
+            <th scope="col">Joined</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of filteredItems(); track m.id) {
+            <tr>
+              <td data-label="Member">
+                <span class="members-page__name">{{ m.firstName }} {{ m.lastName }}</span>
+              </td>
+              <td data-label="Contact">
+                <div class="members-page__stack">
+                  <a class="members-page__link" [href]="'mailto:' + m.email">{{ m.email }}</a>
+                  @if (m.phone) {
+                    <span class="members-page__muted">{{ m.phone }}</span>
+                  }
+                </div>
+              </td>
+              <td data-label="Organization">
+                <span class="members-page__tenant">{{ tenantLabel(m.tenantId) }}</span>
+              </td>
+              <td data-label="Status">
+                <span class="members-page__badge" [class]="statusBadgeClass(m.status)">
+                  {{ statusLabels[m.status] }}
+                </span>
+              </td>
+              <td data-label="Joined">{{ m.createdAt | date: 'mediumDate' }}</td>
+              <td class="members-page__actions">
+                <app-button type="button" variant="tertiary" (clicked)="openDetail(m)">
+                  View
+                </app-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="members-page__cards" role="list">
+      @for (m of filteredItems(); track m.id) {
+        <article class="members-page__card" role="listitem">
+          <div class="members-page__card-head">
+            <h2 class="members-page__card-title">{{ m.firstName }} {{ m.lastName }}</h2>
+            <span class="members-page__badge" [class]="statusBadgeClass(m.status)">
+              {{ statusLabels[m.status] }}
+            </span>
+          </div>
+          <dl class="members-page__card-dl">
+            <div>
+              <dt>Email</dt>
+              <dd>
+                <a class="members-page__link" [href]="'mailto:' + m.email">{{ m.email }}</a>
+              </dd>
+            </div>
+            @if (m.phone) {
+              <div>
+                <dt>Phone</dt>
+                <dd>{{ m.phone }}</dd>
+              </div>
+            }
+            <div>
+              <dt>Organization</dt>
+              <dd>{{ tenantLabel(m.tenantId) }}</dd>
+            </div>
+            <div>
+              <dt>Joined</dt>
+              <dd>{{ m.createdAt | date: 'mediumDate' }}</dd>
+            </div>
+          </dl>
+          <div class="members-page__card-actions">
+            <app-button type="button" variant="tertiary" (clicked)="openDetail(m)">View</app-button>
+          </div>
+        </article>
+      }
+    </div>
+
+    <nav class="members-page__pager" aria-label="Pagination">
+      <app-button type="button" variant="secondary" [disabled]="!hasPrevious()" (clicked)="goPrev()">
+        Previous
+      </app-button>
+      <p class="members-page__pager-info">
+        Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+        <span> · {{ totalCount() }} total</span>
+      </p>
+      <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+        Next
+      </app-button>
+    </nav>
+  }
+</div>
+
+<dialog
+  #detailDialog
+  class="members-page__dialog"
+  aria-labelledby="detail-member-title"
+  (click)="onDetailBackdrop($event)"
+>
+  <div class="members-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="members-page__dialog-head">
+      <h2 id="detail-member-title" class="members-page__dialog-title">Member details</h2>
+      <button
+        type="button"
+        class="members-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDetail()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="members-page__dialog-body">
+      @if (detailLoading()) {
+        <p class="members-page__detail-loading" role="status" aria-live="polite">Loading…</p>
+      } @else if (detailMember(); as d) {
+        <dl class="members-page__detail-dl">
+          <div>
+            <dt>Name</dt>
+            <dd>{{ d.firstName }} {{ d.lastName }}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>
+              <a class="members-page__link" [href]="'mailto:' + d.email">{{ d.email }}</a>
+            </dd>
+          </div>
+          <div>
+            <dt>Phone</dt>
+            <dd>{{ d.phone || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Organization</dt>
+            <dd>{{ tenantLabel(d.tenantId) }}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span class="members-page__badge" [class]="statusBadgeClass(d.status)">
+                {{ statusLabels[d.status] }}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt>Joined</dt>
+            <dd>{{ d.createdAt | date: 'medium' }}</dd>
+          </div>
+          <div>
+            <dt>Member id</dt>
+            <dd><code class="members-page__code members-page__code--id">{{ d.id }}</code></dd>
+          </div>
+          <div>
+            <dt>Tenant id</dt>
+            <dd><code class="members-page__code members-page__code--id">{{ d.tenantId }}</code></dd>
+          </div>
+        </dl>
+      }
+      <footer class="members-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDetail()">Close</app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>

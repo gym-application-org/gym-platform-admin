@@ -1,0 +1,167 @@
+<section class="uoc-page" aria-labelledby="uoc-title">
+  <div class="uoc-page__head">
+    <h2 id="uoc-title" class="uoc-page__title">User ↔ operation claim assignments</h2>
+    <p class="uoc-page__desc">
+      Rows link a user to a single operation claim. Bulk updates use the Accounts → Permissions action on a user.
+    </p>
+  </div>
+
+  @if (!canRead()) {
+    <p class="uoc-page__denied" role="status">You do not have access to view assignments.</p>
+  } @else {
+    <div class="uoc-page__toolbar" aria-label="Filters">
+      <div class="uoc-page__search">
+        <label class="uoc-page__label" for="uoc-search">Search</label>
+        <input
+          id="uoc-search"
+          type="search"
+          class="uoc-page__input"
+          placeholder="User id, claim id, link id, claim name…"
+          [value]="searchQuery()"
+          (input)="onSearchInputEvent($event)"
+          autocomplete="off"
+        />
+      </div>
+      <div class="uoc-page__page-size">
+        <label class="uoc-page__label" for="uoc-page-size">Rows per page</label>
+        <select
+          id="uoc-page-size"
+          class="uoc-page__select"
+          [value]="pageSize()"
+          (change)="onPageSizeChange($event)"
+        >
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+        </select>
+      </div>
+    </div>
+
+    @if (loading()) {
+      <div class="uoc-page__state" role="status" aria-busy="true">
+        <div class="uoc-page__skeleton-list" aria-hidden="true">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="uoc-page__skeleton-row"></div>
+          }
+        </div>
+        <span class="sr-only">Loading</span>
+      </div>
+    } @else if (!filteredItems().length) {
+      <div class="uoc-page__empty">
+        <p class="uoc-page__empty-title">No assignments on this page</p>
+        <p class="uoc-page__empty-text">Try another page or adjust search.</p>
+      </div>
+    } @else {
+      <div class="uoc-page__table-wrap">
+        <table class="uoc-page__table">
+          <thead>
+            <tr>
+              <th scope="col">Link id</th>
+              <th scope="col">User id</th>
+              <th scope="col">Claim</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of filteredItems(); track row.id) {
+              <tr>
+                <td data-label="Link id"><code class="uoc-page__code">{{ row.id }}</code></td>
+                <td data-label="User id"><code class="uoc-page__code">{{ row.userId }}</code></td>
+                <td data-label="Claim">
+                  <span class="uoc-page__claim-name">{{ claimName(row.operationClaimId) }}</span>
+                  <span class="uoc-page__claim-id"
+                    ><code class="uoc-page__code">#{{ row.operationClaimId }}</code></span
+                  >
+                </td>
+                <td class="uoc-page__actions">
+                  @if (canDelete()) {
+                    <app-button type="button" variant="danger" (clicked)="confirmDelete(row)">
+                      Remove
+                    </app-button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="uoc-page__cards" role="list">
+        @for (row of filteredItems(); track row.id) {
+          <article class="uoc-page__card" role="listitem">
+            <p class="uoc-page__card-line">
+              <span class="uoc-page__card-k">Link</span>
+              <code class="uoc-page__code">{{ row.id }}</code>
+            </p>
+            <p class="uoc-page__card-line">
+              <span class="uoc-page__card-k">User</span>
+              <code class="uoc-page__code">{{ row.userId }}</code>
+            </p>
+            <p class="uoc-page__card-line">
+              <span class="uoc-page__card-k">Claim</span>
+              {{ claimName(row.operationClaimId) }}
+              <code class="uoc-page__code">#{{ row.operationClaimId }}</code>
+            </p>
+            @if (canDelete()) {
+              <div class="uoc-page__card-actions">
+                <app-button type="button" variant="danger" (clicked)="confirmDelete(row)">
+                  Remove
+                </app-button>
+              </div>
+            }
+          </article>
+        }
+      </div>
+
+      <nav class="uoc-page__pager" aria-label="Pagination">
+        <app-button type="button" variant="secondary" [disabled]="!hasPrevious()" (clicked)="goPrev()">
+          Previous
+        </app-button>
+        <p class="uoc-page__pager-info">
+          Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+          <span> · {{ totalCount() }} total</span>
+        </p>
+        <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+          Next
+        </app-button>
+      </nav>
+    }
+  }
+</section>
+
+<dialog
+  #deleteDialog
+  class="uoc-page__dialog"
+  aria-labelledby="uoc-del-title"
+  aria-describedby="uoc-del-desc"
+  (click)="onDeleteBackdrop($event)"
+>
+  <div class="uoc-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="uoc-page__dialog-head">
+      <h2 id="uoc-del-title" class="uoc-page__dialog-title">Remove assignment</h2>
+      <button type="button" class="uoc-page__dialog-close" aria-label="Close dialog" (click)="closeDelete()">
+        ×
+      </button>
+    </header>
+    <div class="uoc-page__dialog-body">
+      <p id="uoc-del-desc" class="uoc-page__delete-text">
+        @if (linkPendingDelete(); as row) {
+          Remove link <strong>{{ row.id }}</strong> for user <strong>{{ row.userId }}</strong> and claim
+          <strong>{{ claimName(row.operationClaimId) }}</strong>?
+        }
+      </p>
+      <footer class="uoc-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDelete()">Cancel</app-button>
+        <app-button
+          type="button"
+          variant="danger"
+          [loading]="deleteSubmitting()"
+          [disabled]="deleteSubmitting()"
+          (clicked)="submitDelete()"
+        >
+          Remove
+        </app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>

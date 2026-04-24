@@ -1,0 +1,445 @@
+<div class="support-page">
+  <header class="support-page__hero">
+    <div class="support-page__hero-inner">
+      <div class="support-page__title-block">
+        <h1 class="support-page__title">Support tickets</h1>
+        <p class="support-page__subtitle">
+          Review and manage tenant support requests. Filter by organization, status, priority, or date
+          range; open a ticket to edit or remove it.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <section class="support-page__filters" aria-label="Filters">
+    <div class="support-page__filters-inner">
+      <div class="support-page__field">
+        <label class="support-page__label" for="st-filter-tenant">Organization</label>
+        <select
+          id="st-filter-tenant"
+          class="support-page__select"
+          [value]="filterTenantId()"
+          [disabled]="tenantsLoading()"
+          (change)="onTenantFilterChange($event)"
+          aria-describedby="st-filter-tenant-hint"
+        >
+          <option value="">All organizations</option>
+          @for (opt of tenantOptions(); track opt.id) {
+            <option [value]="opt.id">{{ opt.name }}</option>
+          }
+        </select>
+        <p id="st-filter-tenant-hint" class="support-page__field-hint">
+          @if (tenantsLoading()) {
+            Loading organizations…
+          } @else {
+            First 100 tenants; narrow the list when needed.
+          }
+        </p>
+      </div>
+
+      <div class="support-page__field">
+        <label class="support-page__label" for="st-filter-status">Status</label>
+        <select
+          id="st-filter-status"
+          class="support-page__select"
+          [value]="filterStatus() === '' ? '' : filterStatus().toString()"
+          (change)="onStatusFilterChange($event)"
+        >
+          <option value="">All statuses</option>
+          <option [value]="ticketStatusEnum.Open">{{ statusLabels[ticketStatusEnum.Open] }}</option>
+          <option [value]="ticketStatusEnum.InProgress">{{ statusLabels[ticketStatusEnum.InProgress] }}</option>
+          <option [value]="ticketStatusEnum.Resolved">{{ statusLabels[ticketStatusEnum.Resolved] }}</option>
+          <option [value]="ticketStatusEnum.Closed">{{ statusLabels[ticketStatusEnum.Closed] }}</option>
+        </select>
+      </div>
+
+      <div class="support-page__field">
+        <label class="support-page__label" for="st-filter-priority">Priority</label>
+        <select
+          id="st-filter-priority"
+          class="support-page__select"
+          [value]="filterPriority() === '' ? '' : filterPriority().toString()"
+          (change)="onPriorityFilterChange($event)"
+        >
+          <option value="">All priorities</option>
+          <option [value]="ticketPriorityEnum.Low">{{ priorityLabels[ticketPriorityEnum.Low] }}</option>
+          <option [value]="ticketPriorityEnum.Medium">{{ priorityLabels[ticketPriorityEnum.Medium] }}</option>
+          <option [value]="ticketPriorityEnum.High">{{ priorityLabels[ticketPriorityEnum.High] }}</option>
+          <option [value]="ticketPriorityEnum.Urgent">{{ priorityLabels[ticketPriorityEnum.Urgent] }}</option>
+        </select>
+      </div>
+
+      <div class="support-page__field support-page__field--date">
+        <label class="support-page__label" for="st-filter-from">Created from</label>
+        <input
+          id="st-filter-from"
+          type="date"
+          class="support-page__input"
+          [value]="filterFrom()"
+          (change)="onFromChange($event)"
+          aria-describedby="st-date-hint"
+        />
+      </div>
+
+      <div class="support-page__field support-page__field--date">
+        <label class="support-page__label" for="st-filter-to">Created to</label>
+        <input
+          id="st-filter-to"
+          type="date"
+          class="support-page__input"
+          [value]="filterTo()"
+          (change)="onToChange($event)"
+          aria-describedby="st-date-hint"
+        />
+      </div>
+
+      <div class="support-page__field support-page__field--actions">
+        <span id="st-date-hint" class="support-page__field-hint support-page__field-hint--spaced">
+          Inclusive range on created date (local day bounds).
+        </span>
+        <app-button type="button" variant="tertiary" (clicked)="clearDateFilters()">
+          Clear dates
+        </app-button>
+      </div>
+
+      <div class="support-page__field support-page__field--compact">
+        <label class="support-page__label" for="st-page-size">Rows</label>
+        <select
+          id="st-page-size"
+          class="support-page__select"
+          [value]="pageSize()"
+          (change)="onPageSizeChange($event)"
+        >
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="support-page__state" role="status" aria-live="polite" aria-busy="true">
+      <div class="support-page__skeleton-list" aria-hidden="true">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="support-page__skeleton-row"></div>
+        }
+      </div>
+      <span class="sr-only">Loading support tickets</span>
+    </div>
+  } @else if (!pageItems().length) {
+    <div class="support-page__empty">
+      <p class="support-page__empty-title">No tickets match</p>
+      <p class="support-page__empty-text">
+        Adjust filters or date range, or check back when new requests arrive.
+      </p>
+    </div>
+  } @else {
+    <div class="support-page__table-wrap">
+      <table class="support-page__table">
+        <thead>
+          <tr>
+            <th scope="col">Ticket</th>
+            <th scope="col">Organization</th>
+            <th scope="col">Priority</th>
+            <th scope="col">Status</th>
+            <th scope="col">Created</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of pageItems(); track t.id) {
+            <tr>
+              <td data-label="Ticket">
+                <span class="support-page__ticket-title">{{ t.title }}</span>
+                <span class="support-page__ticket-preview">{{ previewText(t.description) }}</span>
+              </td>
+              <td data-label="Organization">
+                <span class="support-page__tenant">{{ tenantLabel(t.tenantId) }}</span>
+              </td>
+              <td data-label="Priority">
+                <span class="support-page__prio" [class]="priorityBadgeClass(t.priority)">
+                  {{ priorityLabels[t.priority] }}
+                </span>
+              </td>
+              <td data-label="Status">
+                <span class="support-page__badge" [class]="statusBadgeClass(t.status)">
+                  {{ statusLabels[t.status] }}
+                </span>
+              </td>
+              <td data-label="Created">{{ t.createdAt | date: 'mediumDate' }}</td>
+              <td class="support-page__actions">
+                <app-button type="button" variant="tertiary" (clicked)="openDetail(t)">View</app-button>
+                <app-button type="button" variant="secondary" (clicked)="openEdit(t)">Edit</app-button>
+                <app-button type="button" variant="danger" (clicked)="openDeleteConfirm(t)">Delete</app-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="support-page__cards" role="list">
+      @for (t of pageItems(); track t.id) {
+        <article class="support-page__card" role="listitem">
+          <div class="support-page__card-head">
+            <h2 class="support-page__card-title">{{ t.title }}</h2>
+            <div class="support-page__card-badges">
+              <span class="support-page__badge" [class]="statusBadgeClass(t.status)">
+                {{ statusLabels[t.status] }}
+              </span>
+              <span class="support-page__prio" [class]="priorityBadgeClass(t.priority)">
+                {{ priorityLabels[t.priority] }}
+              </span>
+            </div>
+          </div>
+          <p class="support-page__card-desc">{{ t.description }}</p>
+          <dl class="support-page__card-dl">
+            <div>
+              <dt>Organization</dt>
+              <dd>{{ tenantLabel(t.tenantId) }}</dd>
+            </div>
+            <div>
+              <dt>Created</dt>
+              <dd>{{ t.createdAt | date: 'medium' }}</dd>
+            </div>
+          </dl>
+          <div class="support-page__card-actions">
+            <app-button type="button" variant="tertiary" (clicked)="openDetail(t)">View</app-button>
+            <app-button type="button" variant="secondary" (clicked)="openEdit(t)">Edit</app-button>
+            <app-button type="button" variant="danger" (clicked)="openDeleteConfirm(t)">Delete</app-button>
+          </div>
+        </article>
+      }
+    </div>
+
+    <nav class="support-page__pager" aria-label="Pagination">
+      <app-button type="button" variant="secondary" [disabled]="!hasPrevious()" (clicked)="goPrev()">
+        Previous
+      </app-button>
+      <p class="support-page__pager-info">
+        Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+        <span> · {{ totalCount() }} total</span>
+      </p>
+      <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+        Next
+      </app-button>
+    </nav>
+  }
+</div>
+
+<dialog
+  #detailDialog
+  class="support-page__dialog"
+  aria-labelledby="st-detail-title"
+  (click)="onDetailBackdrop($event)"
+>
+  <div class="support-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="support-page__dialog-head">
+      <h2 id="st-detail-title" class="support-page__dialog-title">Ticket details</h2>
+      <button
+        type="button"
+        class="support-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDetail()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="support-page__dialog-body">
+      @if (detailLoading()) {
+        <p class="support-page__detail-loading" role="status" aria-live="polite">Loading…</p>
+      } @else if (detailTicket(); as d) {
+        <div class="support-page__detail-meta">
+          <span class="support-page__badge" [class]="statusBadgeClass(d.status)">{{ statusLabels[d.status] }}</span>
+          <span class="support-page__prio" [class]="priorityBadgeClass(d.priority)">{{ priorityLabels[d.priority] }}</span>
+        </div>
+        <h3 class="support-page__detail-heading">{{ d.title }}</h3>
+        <p class="support-page__detail-text">{{ d.description }}</p>
+        <dl class="support-page__detail-dl">
+          <div>
+            <dt>Organization</dt>
+            <dd>{{ tenantLabel(d.tenantId) }}</dd>
+          </div>
+          <div>
+            <dt>Created</dt>
+            <dd>{{ d.createdAt | date: 'medium' }}</dd>
+          </div>
+          @if (d.closedAt) {
+            <div>
+              <dt>Closed</dt>
+              <dd>{{ d.closedAt | date: 'medium' }}</dd>
+            </div>
+          }
+          <div>
+            <dt>Ticket id</dt>
+            <dd><code class="support-page__code">{{ d.id }}</code></dd>
+          </div>
+          <div>
+            <dt>Tenant id</dt>
+            <dd><code class="support-page__code">{{ d.tenantId }}</code></dd>
+          </div>
+        </dl>
+      }
+      <footer class="support-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDetail()">Close</app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>
+
+<dialog
+  #editDialog
+  class="support-page__dialog support-page__dialog--wide"
+  aria-labelledby="st-edit-title"
+  (click)="onEditBackdrop($event)"
+>
+  <div class="support-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="support-page__dialog-head">
+      <h2 id="st-edit-title" class="support-page__dialog-title">Edit ticket</h2>
+      <button
+        type="button"
+        class="support-page__dialog-close"
+        aria-label="Close dialog"
+        [disabled]="editSaving()"
+        (click)="closeEdit()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="support-page__dialog-body">
+      @if (editLoading()) {
+        <p class="support-page__detail-loading" role="status" aria-live="polite">Loading…</p>
+      } @else {
+        <div class="support-page__form">
+          <div class="support-page__form-field">
+            <label class="support-page__label" for="st-edit-title-input">Title</label>
+            <input
+              id="st-edit-title-input"
+              type="text"
+              class="support-page__input"
+              autocomplete="off"
+              [value]="editTitle()"
+              (input)="onEditTitleInput($event)"
+              aria-required="true"
+            />
+          </div>
+          <div class="support-page__form-field">
+            <label class="support-page__label" for="st-edit-desc">Description</label>
+            <textarea
+              id="st-edit-desc"
+              class="support-page__textarea"
+              rows="5"
+              [value]="editDescription()"
+              (input)="onEditDescriptionInput($event)"
+            ></textarea>
+          </div>
+          <div class="support-page__form-row">
+            <div class="support-page__form-field">
+              <label class="support-page__label" for="st-edit-status">Status</label>
+              <select
+                id="st-edit-status"
+                class="support-page__select"
+                [value]="editStatus()"
+                (change)="onEditStatusChange($event)"
+              >
+                <option [value]="ticketStatusEnum.Open">{{ statusLabels[ticketStatusEnum.Open] }}</option>
+                <option [value]="ticketStatusEnum.InProgress">{{ statusLabels[ticketStatusEnum.InProgress] }}</option>
+                <option [value]="ticketStatusEnum.Resolved">{{ statusLabels[ticketStatusEnum.Resolved] }}</option>
+                <option [value]="ticketStatusEnum.Closed">{{ statusLabels[ticketStatusEnum.Closed] }}</option>
+              </select>
+            </div>
+            <div class="support-page__form-field">
+              <label class="support-page__label" for="st-edit-priority">Priority</label>
+              <select
+                id="st-edit-priority"
+                class="support-page__select"
+                [value]="editPriority()"
+                (change)="onEditPriorityChange($event)"
+              >
+                <option [value]="ticketPriorityEnum.Low">{{ priorityLabels[ticketPriorityEnum.Low] }}</option>
+                <option [value]="ticketPriorityEnum.Medium">{{ priorityLabels[ticketPriorityEnum.Medium] }}</option>
+                <option [value]="ticketPriorityEnum.High">{{ priorityLabels[ticketPriorityEnum.High] }}</option>
+                <option [value]="ticketPriorityEnum.Urgent">{{ priorityLabels[ticketPriorityEnum.Urgent] }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="support-page__form-field">
+            <label class="support-page__label" for="st-edit-closed">Closed at (optional)</label>
+            <input
+              id="st-edit-closed"
+              type="datetime-local"
+              class="support-page__input"
+              [value]="editClosedAt()"
+              (input)="onEditClosedAtInput($event)"
+              aria-describedby="st-edit-closed-hint"
+            />
+            <p id="st-edit-closed-hint" class="support-page__field-hint">
+              Leave empty to use “now” when status is resolved or closed.
+            </p>
+          </div>
+        </div>
+      }
+      <footer class="support-page__dialog-footer">
+        <app-button type="button" variant="secondary" [disabled]="editSaving()" (clicked)="closeEdit()">
+          Cancel
+        </app-button>
+        <app-button
+          type="button"
+          variant="primary"
+          [loading]="editSaving()"
+          [disabled]="editLoading() || editSaving()"
+          (clicked)="saveEdit()"
+        >
+          Save changes
+        </app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>
+
+<dialog
+  #deleteDialog
+  class="support-page__dialog"
+  aria-labelledby="st-delete-title"
+  aria-describedby="st-delete-desc"
+  (click)="onDeleteBackdrop($event)"
+>
+  <div class="support-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="support-page__dialog-head">
+      <h2 id="st-delete-title" class="support-page__dialog-title">Delete ticket</h2>
+      <button
+        type="button"
+        class="support-page__dialog-close"
+        aria-label="Close dialog"
+        [disabled]="deleteLoading()"
+        (click)="closeDelete()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="support-page__dialog-body">
+      <p id="st-delete-desc" class="support-page__delete-text">
+        @if (deletePending(); as p) {
+          Permanently delete
+          <strong class="support-page__delete-strong">{{ p.title }}</strong>
+          ? This cannot be undone.
+        }
+      </p>
+      <footer class="support-page__dialog-footer">
+        <app-button type="button" variant="secondary" [disabled]="deleteLoading()" (clicked)="closeDelete()">
+          Cancel
+        </app-button>
+        <app-button
+          type="button"
+          variant="danger"
+          [loading]="deleteLoading()"
+          [disabled]="deleteLoading()"
+          (clicked)="confirmDelete()"
+        >
+          Delete
+        </app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>

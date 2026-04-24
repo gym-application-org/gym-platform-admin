@@ -1,0 +1,55 @@
+<section class="urr-page" aria-labelledby="urr-title">
+  <h2 id="urr-title" class="urr-page__title">Roles &amp; operation claims</h2>
+
+  <div class="urr-page__panel">
+    <h3 class="urr-page__h3">How this fits together</h3>
+    <ul class="urr-page__list">
+      <li>
+        <strong>Roles</strong> (JWT claim
+        <code class="urr-page__code">http://schemas.microsoft.com/ws/2008/06/identity/claims/role</code>) are
+        coarse labels such as <strong>Admin</strong>. They are issued at login and stored client-side for UI
+        checks.
+      </li>
+      <li>
+        <strong>Operation claims</strong> are named permissions in the API (strings like
+        <code class="urr-page__code">users.read</code>). They can be grouped and assigned to users; the
+        <strong>Operation claims</strong> tab edits the catalog, and <strong>Assignments</strong> lists every
+        user–claim row.
+      </li>
+      <li>
+        Per-user bulk assignment of operation claims uses
+        <strong>Accounts → Permissions</strong> (replace all claims for that user in one save).
+      </li>
+    </ul>
+    <p class="urr-page__note">
+      There is no separate “user roles” REST surface in this Angular client yet. If your backend exposes role
+      assignment endpoints, wire them here and extend the <strong>Accounts</strong> detail view.
+    </p>
+  </div>
+
+  <div class="urr-page__panel">
+    <h3 class="urr-page__h3">Role strings used in this admin app</h3>
+    <p class="urr-page__intro">
+      These names align with <code class="urr-page__code">AuthorizationService</code> checks. Your identity
+      store must issue matching role or claim names for checks to pass.
+    </p>
+    <div class="urr-page__table-wrap">
+      <table class="urr-page__table">
+        <thead>
+          <tr>
+            <th scope="col">Role / permission name</th>
+            <th scope="col">Typical use</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of roles; track r.role) {
+            <tr>
+              <td><code class="urr-page__code">{{ r.role }}</code></td>
+              <td>{{ r.note }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

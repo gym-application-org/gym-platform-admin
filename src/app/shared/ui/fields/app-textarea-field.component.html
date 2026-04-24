@@ -1,0 +1,31 @@
+<div class="field">
+  @if (label()) {
+    <label class="field__label" [for]="controlId()">
+      {{ label() }}
+      @if (required()) {
+        <span class="field__required" aria-hidden="true">*</span>
+        <span class="sr-only">required</span>
+      }
+    </label>
+  }
+  <textarea
+    class="field__control"
+    [id]="controlId()"
+    [rows]="rows()"
+    [value]="value()"
+    [placeholder]="placeholder()"
+    [required]="required()"
+    [disabled]="isDisabled()"
+    [attr.aria-required]="required() ? 'true' : null"
+    [attr.aria-invalid]="error() ? 'true' : null"
+    [attr.aria-describedby]="describedBy()"
+    (input)="onInput($event)"
+    (blur)="onBlur()"
+  ></textarea>
+  @if (hint() && !error()) {
+    <p class="field__hint" [id]="hintId()">{{ hint() }}</p>
+  }
+  @if (error()) {
+    <p class="field__error" [id]="errorId()" role="alert">{{ error() }}</p>
+  }
+</div>

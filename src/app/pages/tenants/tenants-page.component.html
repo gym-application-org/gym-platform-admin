@@ -1,0 +1,424 @@
+<div class="tenants-page">
+  <header class="tenants-page__header">
+    <div class="tenants-page__title-block">
+      <h1 class="tenants-page__title">Tenants</h1>
+      <p class="tenants-page__subtitle">
+        Organizations on the platform. Search filters the current page of results.
+      </p>
+    </div>
+    <app-button type="button" variant="primary" (clicked)="openCreate()">Add tenant</app-button>
+  </header>
+
+  <section class="tenants-page__toolbar" aria-label="List filters">
+    <div class="tenants-page__search">
+      <label class="tenants-page__search-label" for="tenant-search">Search</label>
+      <input
+        id="tenant-search"
+        type="search"
+        class="tenants-page__search-input"
+        placeholder="Name, subdomain, owner, email…"
+        [value]="searchQuery()"
+        (input)="onSearchInputEvent($event)"
+        autocomplete="off"
+        aria-describedby="tenant-search-hint"
+      />
+      <p id="tenant-search-hint" class="tenants-page__hint">Filters the loaded page only.</p>
+    </div>
+    <div class="tenants-page__page-size">
+      <label class="tenants-page__search-label" for="page-size">Rows per page</label>
+      <select
+        id="page-size"
+        class="tenants-page__select"
+        [value]="pageSize()"
+        (change)="onPageSizeChange($event)"
+      >
+        <option [value]="10">10</option>
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
+      </select>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="tenants-page__state" role="status" aria-live="polite" aria-busy="true">
+      <div class="tenants-page__skeleton-list" aria-hidden="true">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="tenants-page__skeleton-row"></div>
+        }
+      </div>
+      <span class="sr-only">Loading tenants</span>
+    </div>
+  } @else if (!filteredItems().length) {
+    <div class="tenants-page__empty">
+      <p class="tenants-page__empty-title">No tenants to show</p>
+      <p class="tenants-page__empty-text">
+        @if (searchQuery().trim()) {
+          Try clearing the search or change page.
+        } @else {
+          Create a tenant to get started.
+        }
+      </p>
+      @if (!searchQuery().trim()) {
+        <app-button type="button" variant="primary" (clicked)="openCreate()">Add tenant</app-button>
+      }
+    </div>
+  } @else {
+    <div class="tenants-page__table-wrap">
+      <table class="tenants-page__table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Subdomain</th>
+            <th scope="col">Owner</th>
+            <th scope="col">Email</th>
+            <th scope="col">Phone</th>
+            <th scope="col">Active</th>
+            <th scope="col">Created</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tenant of filteredItems(); track tenant.id) {
+            <tr>
+              <td data-label="Name">{{ tenant.name }}</td>
+              <td data-label="Subdomain">
+                <code class="tenants-page__code">{{ tenant.subdomain }}</code>
+              </td>
+              <td data-label="Owner">{{ tenant.ownerName }}</td>
+              <td data-label="Email">{{ tenant.email }}</td>
+              <td data-label="Phone">{{ tenant.phone }}</td>
+              <td data-label="Active">
+                <span
+                  class="tenants-page__badge"
+                  [class.tenants-page__badge--on]="tenant.isActive"
+                  [class.tenants-page__badge--off]="!tenant.isActive"
+                >
+                  {{ tenant.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td data-label="Created">{{ tenant.createdAt | date: 'mediumDate' }}</td>
+              <td class="tenants-page__actions">
+                <app-button type="button" variant="tertiary" (clicked)="openDetail(tenant)">
+                  View
+                </app-button>
+                <app-button type="button" variant="tertiary" (clicked)="openEdit(tenant)">
+                  Edit
+                </app-button>
+                <app-button type="button" variant="danger" (clicked)="confirmDelete(tenant)">
+                  Delete
+                </app-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tenants-page__cards" role="list">
+      @for (tenant of filteredItems(); track tenant.id) {
+        <article class="tenants-page__card" role="listitem">
+          <div class="tenants-page__card-head">
+            <h2 class="tenants-page__card-title">{{ tenant.name }}</h2>
+            <span
+              class="tenants-page__badge"
+              [class.tenants-page__badge--on]="tenant.isActive"
+              [class.tenants-page__badge--off]="!tenant.isActive"
+            >
+              {{ tenant.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          <dl class="tenants-page__card-dl">
+            <div>
+              <dt>Subdomain</dt>
+              <dd><code class="tenants-page__code">{{ tenant.subdomain }}</code></dd>
+            </div>
+            <div>
+              <dt>Owner</dt>
+              <dd>{{ tenant.ownerName }}</dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd>{{ tenant.email }}</dd>
+            </div>
+            <div>
+              <dt>Phone</dt>
+              <dd>{{ tenant.phone }}</dd>
+            </div>
+            <div>
+              <dt>Created</dt>
+              <dd>{{ tenant.createdAt | date: 'mediumDate' }}</dd>
+            </div>
+          </dl>
+          <div class="tenants-page__card-actions">
+            <app-button type="button" variant="tertiary" (clicked)="openDetail(tenant)">
+              View
+            </app-button>
+            <app-button type="button" variant="tertiary" (clicked)="openEdit(tenant)">
+              Edit
+            </app-button>
+            <app-button type="button" variant="danger" (clicked)="confirmDelete(tenant)">
+              Delete
+            </app-button>
+          </div>
+        </article>
+      }
+    </div>
+
+    <nav class="tenants-page__pager" aria-label="Pagination">
+      <app-button
+        type="button"
+        variant="secondary"
+        [disabled]="!hasPrevious()"
+        (clicked)="goPrev()"
+      >
+        Previous
+      </app-button>
+      <p class="tenants-page__pager-info">
+        Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+        <span> · {{ totalCount() }} total</span>
+      </p>
+      <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+        Next
+      </app-button>
+    </nav>
+  }
+</div>
+
+<!-- Create -->
+<dialog
+  #createDialog
+  class="tenants-page__dialog"
+  aria-labelledby="create-tenant-title"
+  (click)="onCreateBackdrop($event)"
+>
+  <div class="tenants-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="tenants-page__dialog-head">
+      <h2 id="create-tenant-title" class="tenants-page__dialog-title">New tenant</h2>
+      <button
+        type="button"
+        class="tenants-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeCreate()"
+      >
+        ×
+      </button>
+    </header>
+    <form class="tenants-page__dialog-body" [formGroup]="createForm" (ngSubmit)="submitCreate()">
+      <app-text-field
+        formControlName="tenantName"
+        label="Tenant name"
+        [required]="true"
+        [error]="createFieldError('tenantName')"
+        autocomplete="organization"
+      />
+      <app-text-field
+        formControlName="tenantSubdomain"
+        label="Subdomain"
+        [required]="true"
+        [error]="createFieldError('tenantSubdomain')"
+        hint="Used in URLs for this organization."
+      />
+      <div class="tenants-page__field">
+        <label class="tenants-page__checkbox-label" for="create-active">
+          <input
+            id="create-active"
+            type="checkbox"
+            formControlName="tenantIsActive"
+            class="tenants-page__checkbox"
+          />
+          Active
+        </label>
+      </div>
+      <app-text-field
+        formControlName="ownerName"
+        label="Owner name"
+        [required]="true"
+        [error]="createFieldError('ownerName')"
+        autocomplete="name"
+      />
+      <app-text-field
+        formControlName="email"
+        label="Email"
+        type="email"
+        [required]="true"
+        [error]="createFieldError('email')"
+        autocomplete="email"
+      />
+      <app-text-field
+        formControlName="phone"
+        label="Phone"
+        type="tel"
+        [required]="true"
+        [error]="createFieldError('phone')"
+        autocomplete="tel"
+      />
+      <footer class="tenants-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeCreate()">Cancel</app-button>
+        <app-button type="submit" variant="primary" [loading]="createSubmitting()" [disabled]="createSubmitting()">
+          Create
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<!-- Edit -->
+<dialog
+  #editDialog
+  class="tenants-page__dialog"
+  aria-labelledby="edit-tenant-title"
+  (click)="onEditBackdrop($event)"
+>
+  <div class="tenants-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="tenants-page__dialog-head">
+      <h2 id="edit-tenant-title" class="tenants-page__dialog-title">Edit tenant</h2>
+      <button
+        type="button"
+        class="tenants-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeEdit()"
+      >
+        ×
+      </button>
+    </header>
+    <form class="tenants-page__dialog-body" [formGroup]="editForm" (ngSubmit)="submitEdit()">
+      <app-text-field
+        formControlName="name"
+        label="Display name"
+        [required]="true"
+        [error]="editNameError()"
+      />
+      <div class="tenants-page__field">
+        <label class="tenants-page__checkbox-label" for="edit-active">
+          <input id="edit-active" type="checkbox" formControlName="isActive" class="tenants-page__checkbox" />
+          Active
+        </label>
+      </div>
+      <p class="tenants-page__dialog-note">
+        Subdomain, owner, and contact details are fixed after creation. Use API changes if those must
+        be updated.
+      </p>
+      <footer class="tenants-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeEdit()">Cancel</app-button>
+        <app-button type="submit" variant="primary" [loading]="editSubmitting()" [disabled]="editSubmitting()">
+          Save
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<!-- Detail -->
+<dialog
+  #detailDialog
+  class="tenants-page__dialog"
+  aria-labelledby="detail-tenant-title"
+  (click)="onDetailBackdrop($event)"
+>
+  <div class="tenants-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="tenants-page__dialog-head">
+      <h2 id="detail-tenant-title" class="tenants-page__dialog-title">Tenant details</h2>
+      <button
+        type="button"
+        class="tenants-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDetail()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="tenants-page__dialog-body">
+      @if (detailLoading()) {
+        <p class="tenants-page__detail-loading" role="status" aria-live="polite">Loading…</p>
+      } @else if (detailTenant(); as t) {
+        <dl class="tenants-page__detail-dl">
+          <div>
+            <dt>Name</dt>
+            <dd>{{ t.name }}</dd>
+          </div>
+          <div>
+            <dt>Subdomain</dt>
+            <dd><code class="tenants-page__code">{{ t.subdomain }}</code></dd>
+          </div>
+          <div>
+            <dt>Owner</dt>
+            <dd>{{ t.ownerName }}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>{{ t.email }}</dd>
+          </div>
+          <div>
+            <dt>Phone</dt>
+            <dd>{{ t.phone }}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span
+                class="tenants-page__badge"
+                [class.tenants-page__badge--on]="t.isActive"
+                [class.tenants-page__badge--off]="!t.isActive"
+              >
+                {{ t.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt>Created</dt>
+            <dd>{{ t.createdAt | date: 'medium' }}</dd>
+          </div>
+          <div>
+            <dt>Id</dt>
+            <dd><code class="tenants-page__code tenants-page__code--id">{{ t.id }}</code></dd>
+          </div>
+        </dl>
+      }
+      <footer class="tenants-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDetail()">Close</app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>
+
+<!-- Delete -->
+<dialog
+  #deleteDialog
+  class="tenants-page__dialog tenants-page__dialog--narrow"
+  aria-labelledby="delete-tenant-title"
+  aria-describedby="delete-tenant-desc"
+  (click)="onDeleteBackdrop($event)"
+>
+  <div class="tenants-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="tenants-page__dialog-head">
+      <h2 id="delete-tenant-title" class="tenants-page__dialog-title">Delete tenant</h2>
+      <button
+        type="button"
+        class="tenants-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDelete()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="tenants-page__dialog-body">
+      <p id="delete-tenant-desc" class="tenants-page__delete-text">
+        @if (tenantPendingDelete(); as del) {
+          Permanently remove <strong>{{ del.name }}</strong>? This cannot be undone.
+        }
+      </p>
+      <footer class="tenants-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDelete()">Cancel</app-button>
+        <app-button
+          type="button"
+          variant="danger"
+          [loading]="deleteSubmitting()"
+          [disabled]="deleteSubmitting()"
+          (clicked)="submitDelete()"
+        >
+          Delete
+        </app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>

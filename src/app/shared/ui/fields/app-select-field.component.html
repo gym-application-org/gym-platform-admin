@@ -1,0 +1,34 @@
+<div class="field">
+  @if (label()) {
+    <label class="field__label" [for]="controlId()">
+      {{ label() }}
+      @if (required()) {
+        <span class="field__required" aria-hidden="true">*</span>
+        <span class="sr-only">required</span>
+      }
+    </label>
+  }
+  <select
+    class="field__control field__control--select"
+    [id]="controlId()"
+    [required]="required()"
+    [disabled]="isDisabled()"
+    [attr.aria-required]="required() ? 'true' : null"
+    [attr.aria-invalid]="error() ? 'true' : null"
+    [attr.aria-describedby]="describedBy()"
+    [value]="value()"
+    (change)="onSelect($event)"
+    (blur)="onBlur()"
+  >
+    <option value="" [disabled]="required()">{{ placeholder() }}</option>
+    @for (opt of options(); track opt.value) {
+      <option [value]="opt.value" [disabled]="opt.disabled === true">{{ opt.label }}</option>
+    }
+  </select>
+  @if (hint() && !error()) {
+    <p class="field__hint" [id]="hintId()">{{ hint() }}</p>
+  }
+  @if (error()) {
+    <p class="field__error" [id]="errorId()" role="alert">{{ error() }}</p>
+  }
+</div>

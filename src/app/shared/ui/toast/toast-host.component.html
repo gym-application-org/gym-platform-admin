@@ -1,0 +1,23 @@
+<div
+  class="toast-host"
+  aria-label="Notifications"
+  [attr.aria-live]="'polite'"
+  [attr.aria-relevant]="'additions text'"
+>
+  @for (t of toast.toasts(); track t.id) {
+    <div
+      class="toast"
+      [class.toast--success]="t.severity === 'success'"
+      [class.toast--danger]="t.severity === 'danger'"
+      [class.toast--attention]="t.severity === 'attention'"
+      [class.toast--accent]="t.severity === 'accent'"
+      [class.toast--neutral]="t.severity === 'neutral'"
+      role="status"
+    >
+      <span class="toast__text">{{ t.message }}</span>
+      <button type="button" class="toast__dismiss" (click)="toast.dismiss(t.id)" [attr.aria-label]="'Dismiss'">
+        ×
+      </button>
+    </div>
+  }
+</div>

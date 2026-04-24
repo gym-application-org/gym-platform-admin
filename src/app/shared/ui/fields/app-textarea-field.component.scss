@@ -1,0 +1,6 @@
+@use './field-shared';
+
+textarea.field__control {
+  min-height: 5rem;
+  resize: vertical;
+}

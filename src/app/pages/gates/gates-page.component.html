@@ -1,0 +1,448 @@
+<div class="gates-page">
+  <header class="gates-page__header">
+    <div class="gates-page__title-block">
+      <h1 class="gates-page__title">Gates</h1>
+      <p class="gates-page__subtitle">
+        Access gates per tenant. Filter the list by tenant, then add or edit gates with a tenant assignment.
+      </p>
+    </div>
+    <app-button type="button" variant="primary" (clicked)="openCreate()">Add gate</app-button>
+  </header>
+
+  <section class="gates-page__toolbar" aria-label="List filters">
+    <div class="gates-page__filter">
+      <label class="gates-page__label" for="gate-filter-tenant">Tenant</label>
+      <select
+        id="gate-filter-tenant"
+        class="gates-page__select"
+        [value]="filterTenantId()"
+        (change)="onFilterTenantChange($event)"
+        [disabled]="tenantsLoading()"
+      >
+        <option value="">All tenants</option>
+        @for (t of tenantsCatalog(); track t.id) {
+          <option [value]="t.id">{{ t.name }}</option>
+        }
+      </select>
+      @if (tenantsLoading()) {
+        <p class="gates-page__hint">Loading tenant list…</p>
+      }
+    </div>
+    <div class="gates-page__search">
+      <label class="gates-page__label" for="gate-search">Search</label>
+      <input
+        id="gate-search"
+        type="search"
+        class="gates-page__search-input"
+        placeholder="Name, code, tenant…"
+        [value]="searchQuery()"
+        (input)="onSearchInputEvent($event)"
+        autocomplete="off"
+        aria-describedby="gate-search-hint"
+      />
+      <p id="gate-search-hint" class="gates-page__hint">Filters the loaded page only.</p>
+    </div>
+    <div class="gates-page__page-size">
+      <label class="gates-page__label" for="gate-page-size">Rows per page</label>
+      <select
+        id="gate-page-size"
+        class="gates-page__select"
+        [value]="pageSize()"
+        (change)="onPageSizeChange($event)"
+      >
+        <option [value]="10">10</option>
+        <option [value]="25">25</option>
+        <option [value]="50">50</option>
+      </select>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="gates-page__state" role="status" aria-live="polite" aria-busy="true">
+      <div class="gates-page__skeleton-list" aria-hidden="true">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="gates-page__skeleton-row"></div>
+        }
+      </div>
+      <span class="sr-only">Loading gates</span>
+    </div>
+  } @else if (!filteredItems().length) {
+    <div class="gates-page__empty">
+      <p class="gates-page__empty-title">No gates to show</p>
+      <p class="gates-page__empty-text">
+        @if (searchQuery().trim()) {
+          Try clearing the search or adjust filters.
+        } @else {
+          Create a gate for a tenant or widen the tenant filter.
+        }
+      </p>
+      @if (!searchQuery().trim()) {
+        <app-button type="button" variant="primary" (clicked)="openCreate()">Add gate</app-button>
+      }
+    </div>
+  } @else {
+    <div class="gates-page__table-wrap">
+      <table class="gates-page__table">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Code</th>
+            <th scope="col">Tenant</th>
+            <th scope="col">Active</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (gate of filteredItems(); track gate.id) {
+            <tr>
+              <td data-label="Name">{{ gate.name }}</td>
+              <td data-label="Code">
+                <code class="gates-page__code">{{ gate.gateCode }}</code>
+              </td>
+              <td data-label="Tenant" class="gates-page__cell-tenant">
+                <span class="gates-page__tenant-name">{{ tenantDisplayName(gate.tenantId) }}</span>
+                <code class="gates-page__code gates-page__code--id">{{ gate.tenantId }}</code>
+              </td>
+              <td data-label="Active">
+                <span
+                  class="gates-page__badge"
+                  [class.gates-page__badge--on]="gate.isActive"
+                  [class.gates-page__badge--off]="!gate.isActive"
+                >
+                  {{ gate.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="gates-page__actions">
+                <app-button type="button" variant="tertiary" (clicked)="openDetail(gate)">
+                  View
+                </app-button>
+                <app-button type="button" variant="tertiary" (clicked)="openEdit(gate)">
+                  Edit
+                </app-button>
+                <app-button type="button" variant="danger" (clicked)="confirmDelete(gate)">
+                  Delete
+                </app-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="gates-page__cards" role="list">
+      @for (gate of filteredItems(); track gate.id) {
+        <article class="gates-page__card" role="listitem">
+          <div class="gates-page__card-head">
+            <h2 class="gates-page__card-title">{{ gate.name }}</h2>
+            <span
+              class="gates-page__badge"
+              [class.gates-page__badge--on]="gate.isActive"
+              [class.gates-page__badge--off]="!gate.isActive"
+            >
+              {{ gate.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          <dl class="gates-page__card-dl">
+            <div>
+              <dt>Code</dt>
+              <dd><code class="gates-page__code">{{ gate.gateCode }}</code></dd>
+            </div>
+            <div>
+              <dt>Tenant</dt>
+              <dd>{{ tenantDisplayName(gate.tenantId) }}</dd>
+            </div>
+            <div>
+              <dt>Tenant id</dt>
+              <dd><code class="gates-page__code gates-page__code--id">{{ gate.tenantId }}</code></dd>
+            </div>
+          </dl>
+          <div class="gates-page__card-actions">
+            <app-button type="button" variant="tertiary" (clicked)="openDetail(gate)">
+              View
+            </app-button>
+            <app-button type="button" variant="tertiary" (clicked)="openEdit(gate)">
+              Edit
+            </app-button>
+            <app-button type="button" variant="danger" (clicked)="confirmDelete(gate)">
+              Delete
+            </app-button>
+          </div>
+        </article>
+      }
+    </div>
+
+    <nav class="gates-page__pager" aria-label="Pagination">
+      <app-button
+        type="button"
+        variant="secondary"
+        [disabled]="!hasPrevious()"
+        (clicked)="goPrev()"
+      >
+        Previous
+      </app-button>
+      <p class="gates-page__pager-info">
+        Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+        <span> · {{ totalCount() }} total</span>
+      </p>
+      <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+        Next
+      </app-button>
+    </nav>
+  }
+</div>
+
+<!-- Create -->
+<dialog
+  #createDialog
+  class="gates-page__dialog"
+  aria-labelledby="create-gate-title"
+  (click)="onCreateBackdrop($event)"
+>
+  <div class="gates-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="gates-page__dialog-head">
+      <h2 id="create-gate-title" class="gates-page__dialog-title">New gate</h2>
+      <button
+        type="button"
+        class="gates-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeCreate()"
+      >
+        ×
+      </button>
+    </header>
+    <form class="gates-page__dialog-body" [formGroup]="createForm" (ngSubmit)="submitCreate()">
+      <div class="gates-page__field">
+        <label class="gates-page__label" for="create-gate-tenant">Tenant</label>
+        <select
+          id="create-gate-tenant"
+          class="gates-page__select gates-page__select--full"
+          formControlName="tenantId"
+          [attr.aria-invalid]="createTenantError() ? 'true' : null"
+          [attr.aria-describedby]="createTenantError() ? 'create-gate-tenant-err' : null"
+        >
+          <option value="">Choose a tenant…</option>
+          @for (t of tenantsCatalog(); track t.id) {
+            <option [value]="t.id">{{ t.name }}</option>
+          }
+        </select>
+        @if (createTenantError(); as err) {
+          <p id="create-gate-tenant-err" class="gates-page__field-error" role="alert">{{ err }}</p>
+        }
+      </div>
+      @if (!tenantsCatalog().length && !tenantsLoading()) {
+        <p class="gates-page__dialog-note">No tenants found. Create a tenant first.</p>
+      }
+      <app-text-field
+        formControlName="name"
+        label="Display name"
+        [required]="true"
+        [error]="createFieldError('name')"
+        autocomplete="off"
+      />
+      <app-text-field
+        formControlName="gateCode"
+        label="Gate code"
+        [required]="true"
+        [error]="createFieldError('gateCode')"
+        hint="Identifier used by devices or integrations."
+        autocomplete="off"
+      />
+      <div class="gates-page__field">
+        <label class="gates-page__checkbox-label" for="create-gate-active">
+          <input
+            id="create-gate-active"
+            type="checkbox"
+            formControlName="isActive"
+            class="gates-page__checkbox"
+          />
+          Active
+        </label>
+      </div>
+      <footer class="gates-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeCreate()">Cancel</app-button>
+        <app-button
+          type="submit"
+          variant="primary"
+          [loading]="createSubmitting()"
+          [disabled]="createSubmitting() || tenantsLoading() || !tenantsCatalog().length"
+        >
+          Create
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<!-- Edit -->
+<dialog
+  #editDialog
+  class="gates-page__dialog"
+  aria-labelledby="edit-gate-title"
+  (click)="onEditBackdrop($event)"
+>
+  <div class="gates-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="gates-page__dialog-head">
+      <h2 id="edit-gate-title" class="gates-page__dialog-title">Edit gate</h2>
+      <button
+        type="button"
+        class="gates-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeEdit()"
+      >
+        ×
+      </button>
+    </header>
+    <form class="gates-page__dialog-body" [formGroup]="editForm" (ngSubmit)="submitEdit()">
+      <div class="gates-page__field">
+        <label class="gates-page__label" for="edit-gate-tenant">Tenant</label>
+        <select
+          id="edit-gate-tenant"
+          class="gates-page__select gates-page__select--full"
+          formControlName="tenantId"
+          [attr.aria-invalid]="editTenantError() ? 'true' : null"
+          [attr.aria-describedby]="editTenantError() ? 'edit-gate-tenant-err' : null"
+        >
+          @for (t of tenantsCatalog(); track t.id) {
+            <option [value]="t.id">{{ t.name }}</option>
+          }
+        </select>
+        @if (editTenantError(); as err) {
+          <p id="edit-gate-tenant-err" class="gates-page__field-error" role="alert">{{ err }}</p>
+        }
+      </div>
+      <app-text-field
+        formControlName="name"
+        label="Display name"
+        [required]="true"
+        [error]="editFieldError('name')"
+        autocomplete="off"
+      />
+      <app-text-field
+        formControlName="gateCode"
+        label="Gate code"
+        [required]="true"
+        [error]="editFieldError('gateCode')"
+        autocomplete="off"
+      />
+      <div class="gates-page__field">
+        <label class="gates-page__checkbox-label" for="edit-gate-active">
+          <input id="edit-gate-active" type="checkbox" formControlName="isActive" class="gates-page__checkbox" />
+          Active
+        </label>
+      </div>
+      <footer class="gates-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeEdit()">Cancel</app-button>
+        <app-button type="submit" variant="primary" [loading]="editSubmitting()" [disabled]="editSubmitting()">
+          Save
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<!-- Detail -->
+<dialog
+  #detailDialog
+  class="gates-page__dialog"
+  aria-labelledby="detail-gate-title"
+  (click)="onDetailBackdrop($event)"
+>
+  <div class="gates-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="gates-page__dialog-head">
+      <h2 id="detail-gate-title" class="gates-page__dialog-title">Gate details</h2>
+      <button
+        type="button"
+        class="gates-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDetail()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="gates-page__dialog-body">
+      @if (detailLoading()) {
+        <p class="gates-page__detail-loading" role="status" aria-live="polite">Loading…</p>
+      } @else if (detailGate(); as g) {
+        <dl class="gates-page__detail-dl">
+          <div>
+            <dt>Name</dt>
+            <dd>{{ g.name }}</dd>
+          </div>
+          <div>
+            <dt>Code</dt>
+            <dd><code class="gates-page__code">{{ g.gateCode }}</code></dd>
+          </div>
+          <div>
+            <dt>Tenant</dt>
+            <dd>{{ tenantDisplayName(g.tenantId) }}</dd>
+          </div>
+          <div>
+            <dt>Tenant id</dt>
+            <dd><code class="gates-page__code gates-page__code--id">{{ g.tenantId }}</code></dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span
+                class="gates-page__badge"
+                [class.gates-page__badge--on]="g.isActive"
+                [class.gates-page__badge--off]="!g.isActive"
+              >
+                {{ g.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt>Gate id</dt>
+            <dd><code class="gates-page__code">{{ g.id }}</code></dd>
+          </div>
+        </dl>
+      }
+      <footer class="gates-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDetail()">Close</app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>
+
+<!-- Delete -->
+<dialog
+  #deleteDialog
+  class="gates-page__dialog gates-page__dialog--narrow"
+  aria-labelledby="delete-gate-title"
+  aria-describedby="delete-gate-desc"
+  (click)="onDeleteBackdrop($event)"
+>
+  <div class="gates-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="gates-page__dialog-head">
+      <h2 id="delete-gate-title" class="gates-page__dialog-title">Delete gate</h2>
+      <button
+        type="button"
+        class="gates-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDelete()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="gates-page__dialog-body">
+      <p id="delete-gate-desc" class="gates-page__delete-text">
+        @if (gatePendingDelete(); as del) {
+          Permanently remove <strong>{{ del.name }}</strong> ({{ del.gateCode }})? This cannot be undone.
+        }
+      </p>
+      <footer class="gates-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDelete()">Cancel</app-button>
+        <app-button
+          type="button"
+          variant="danger"
+          [loading]="deleteSubmitting()"
+          [disabled]="deleteSubmitting()"
+          (clicked)="submitDelete()"
+        >
+          Delete
+        </app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>

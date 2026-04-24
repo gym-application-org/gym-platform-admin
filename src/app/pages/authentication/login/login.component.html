@@ -1,0 +1,58 @@
+<main class="login-page" aria-labelledby="login-heading">
+  <div class="login-page__card">
+    <header class="login-page__header">
+      <p class="login-page__eyebrow">Gym platform</p>
+      <h1 id="login-heading" class="login-page__title">Admin sign in</h1>
+      <p class="login-page__lede">
+        Use your administrator account. Other roles cannot access this application.
+      </p>
+    </header>
+
+    <form class="login-page__form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+      <app-text-field
+        formControlName="email"
+        label="Email"
+        type="email"
+        autocomplete="username"
+        [required]="true"
+        [error]="emailError()"
+        inputMode="email"
+      />
+
+      <div class="login-page__password-block">
+        <app-text-field
+          formControlName="password"
+          label="Password"
+          [type]="showPassword() ? 'text' : 'password'"
+          autocomplete="current-password"
+          [required]="true"
+          [error]="passwordError()"
+        />
+        <button
+          type="button"
+          class="login-page__toggle-password"
+          (click)="togglePasswordVisibility()"
+          [attr.aria-pressed]="showPassword()"
+          [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+        >
+          {{ showPassword() ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+
+      <label class="login-page__remember">
+        <input type="checkbox" formControlName="rememberEmail" />
+        <span>Remember email on this device</span>
+      </label>
+
+      <app-button
+        class="login-page__submit"
+        type="submit"
+        variant="primary"
+        [loading]="loading()"
+        [disabled]="loading()"
+      >
+        Sign in
+      </app-button>
+    </form>
+  </div>
+</main>

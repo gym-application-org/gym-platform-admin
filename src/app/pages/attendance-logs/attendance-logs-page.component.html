@@ -1,0 +1,285 @@
+<div class="attendance-page">
+  <header class="attendance-page__header">
+    <div class="attendance-page__title-row">
+      <div class="attendance-page__title-block">
+        <h1 class="attendance-page__title">Attendance logs</h1>
+        <p class="attendance-page__subtitle">
+          Read-only audit trail of gate check-in attempts. Filter by organization, outcome, time
+          range, member, or gate. Export downloads the current page only.
+        </p>
+      </div>
+      <div class="attendance-page__header-actions">
+        <app-button
+          type="button"
+          variant="secondary"
+          [disabled]="exportDisabled()"
+          (clicked)="exportCsv()"
+        >
+          Export CSV
+        </app-button>
+      </div>
+    </div>
+  </header>
+
+  <section class="attendance-page__filters" aria-label="Filters">
+    <div class="attendance-page__filters-head">
+      <h2 class="attendance-page__filters-title">Filters</h2>
+      <app-button type="button" variant="tertiary" (clicked)="resetFilters()">
+        Reset all
+      </app-button>
+    </div>
+
+    <div class="attendance-page__filters-grid">
+      <div class="attendance-page__field">
+        <label class="attendance-page__label" for="al-filter-tenant">Organization</label>
+        <select
+          id="al-filter-tenant"
+          class="attendance-page__control"
+          [value]="filterTenantId()"
+          [disabled]="tenantsLoading()"
+          (change)="onTenantFilterChange($event)"
+          aria-describedby="al-filter-tenant-hint"
+        >
+          <option value="">All organizations</option>
+          @for (opt of tenantOptions(); track opt.id) {
+            <option [value]="opt.id">{{ opt.name }}</option>
+          }
+        </select>
+        <p id="al-filter-tenant-hint" class="attendance-page__hint">
+          @if (tenantsLoading()) {
+            Loading…
+          } @else {
+            Narrows gates when a tenant is selected.
+          }
+        </p>
+      </div>
+
+      <div class="attendance-page__field">
+        <label class="attendance-page__label" for="al-filter-result">Result</label>
+        <select
+          id="al-filter-result"
+          class="attendance-page__control"
+          [value]="filterResult() === '' ? '' : filterResult().toString()"
+          (change)="onResultFilterChange($event)"
+        >
+          <option value="">All results</option>
+          <option [value]="attendanceResultEnum.Allowed">
+            {{ resultLabels[attendanceResultEnum.Allowed] }}
+          </option>
+          <option [value]="attendanceResultEnum.Denied">
+            {{ resultLabels[attendanceResultEnum.Denied] }}
+          </option>
+        </select>
+      </div>
+
+      <div class="attendance-page__field attendance-page__field--compact">
+        <label class="attendance-page__label" for="al-page-size">Rows</label>
+        <select
+          id="al-page-size"
+          class="attendance-page__control"
+          [value]="pageSize()"
+          (change)="onPageSizeChange($event)"
+        >
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+          <option [value]="100">100</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="attendance-page__presets" role="group" aria-label="Quick date ranges">
+      <span class="attendance-page__presets-label">Quick range</span>
+      <div class="attendance-page__chips">
+        <app-button type="button" variant="tertiary" (clicked)="presetToday()">Today</app-button>
+        <app-button type="button" variant="tertiary" (clicked)="presetLastDays(7)">
+          Last 7 days
+        </app-button>
+        <app-button type="button" variant="tertiary" (clicked)="presetLastDays(30)">
+          Last 30 days
+        </app-button>
+        <app-button type="button" variant="tertiary" (clicked)="clearDates()">Clear dates</app-button>
+      </div>
+    </div>
+
+    <div class="attendance-page__filters-grid attendance-page__filters-grid--dates">
+      <div class="attendance-page__field">
+        <label class="attendance-page__label" for="al-from">From (local)</label>
+        <input
+          id="al-from"
+          type="datetime-local"
+          class="attendance-page__control"
+          [value]="filterFromLocal()"
+          (input)="onFromChange($event)"
+        />
+      </div>
+      <div class="attendance-page__field">
+        <label class="attendance-page__label" for="al-to">To (local)</label>
+        <input
+          id="al-to"
+          type="datetime-local"
+          class="attendance-page__control"
+          [value]="filterToLocal()"
+          (input)="onToChange($event)"
+        />
+      </div>
+      <div class="attendance-page__field attendance-page__field--actions">
+        <span class="sr-only">Apply date range</span>
+        <app-button type="button" variant="secondary" (clicked)="applyDateFilters()">
+          Apply range
+        </app-button>
+      </div>
+    </div>
+
+    <div class="attendance-page__filters-grid">
+      <div class="attendance-page__field">
+        <label class="attendance-page__label" for="al-member">Member id</label>
+        <div class="attendance-page__inline">
+          <input
+            id="al-member"
+            type="text"
+            class="attendance-page__control"
+            placeholder="Member GUID"
+            autocomplete="off"
+            [value]="filterMemberId()"
+            (input)="onMemberIdInput($event)"
+          />
+          <app-button type="button" variant="secondary" (clicked)="applyMemberIdFilter()">
+            Apply
+          </app-button>
+        </div>
+      </div>
+
+      <div class="attendance-page__field">
+        <label class="attendance-page__label" for="al-gate">Gate</label>
+        <select
+          id="al-gate"
+          class="attendance-page__control"
+          [value]="filterGateId() === '' ? '' : filterGateId().toString()"
+          [disabled]="gatesLoading()"
+          (change)="onGateFilterChange($event)"
+          aria-describedby="al-gate-hint"
+        >
+          <option value="">All gates</option>
+          @for (g of gateOptions(); track g.id) {
+            <option [value]="g.id">{{ g.label }}</option>
+          }
+        </select>
+        <p id="al-gate-hint" class="attendance-page__hint">
+          @if (gatesLoading()) {
+            Loading gates…
+          } @else {
+            Up to 200 gates{{ filterTenantId() ? ' for this tenant' : ' (all tenants)' }}.
+          }
+        </p>
+      </div>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="attendance-page__state" role="status" aria-live="polite" aria-busy="true">
+      <div class="attendance-page__skeleton-list" aria-hidden="true">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="attendance-page__skeleton-row"></div>
+        }
+      </div>
+      <span class="sr-only">Loading attendance logs</span>
+    </div>
+  } @else if (!pageItems().length) {
+    <div class="attendance-page__empty">
+      <p class="attendance-page__empty-title">No log entries</p>
+      <p class="attendance-page__empty-text">
+        Adjust filters or date range, or move to another page.
+      </p>
+    </div>
+  } @else {
+    <div class="attendance-page__table-wrap">
+      <table class="attendance-page__table">
+        <thead>
+          <tr>
+            <th scope="col">Time</th>
+            <th scope="col">Result</th>
+            <th scope="col">Organization</th>
+            <th scope="col">Member</th>
+            <th scope="col">Gate</th>
+            <th scope="col">Log id</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of pageItems(); track row.id) {
+            <tr>
+              <td data-label="Time">
+                <time [attr.datetime]="row.timestamp">{{ row.timestamp | date: 'medium' }}</time>
+              </td>
+              <td data-label="Result">
+                <span class="attendance-page__badge" [class]="resultBadgeClass(row.result)">
+                  {{ resultLabels[row.result] }}
+                </span>
+              </td>
+              <td data-label="Organization">
+                <span class="attendance-page__cell-strong">{{ tenantLabel(row.tenantId) }}</span>
+              </td>
+              <td data-label="Member">
+                <code class="attendance-page__code">{{ row.memberId }}</code>
+              </td>
+              <td data-label="Gate">{{ row.gateId }}</td>
+              <td data-label="Log id">
+                <code class="attendance-page__code attendance-page__code--id">{{ row.id }}</code>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="attendance-page__cards" role="list">
+      @for (row of pageItems(); track row.id) {
+        <article class="attendance-page__card" role="listitem">
+          <div class="attendance-page__card-top">
+            <time class="attendance-page__card-time" [attr.datetime]="row.timestamp">
+              {{ row.timestamp | date: 'medium' }}
+            </time>
+            <span class="attendance-page__badge" [class]="resultBadgeClass(row.result)">
+              {{ resultLabels[row.result] }}
+            </span>
+          </div>
+          <dl class="attendance-page__card-dl">
+            <div>
+              <dt>Organization</dt>
+              <dd>{{ tenantLabel(row.tenantId) }}</dd>
+            </div>
+            <div>
+              <dt>Member</dt>
+              <dd>
+                <code class="attendance-page__code">{{ row.memberId }}</code>
+              </dd>
+            </div>
+            <div>
+              <dt>Gate</dt>
+              <dd>{{ row.gateId }}</dd>
+            </div>
+            <div>
+              <dt>Log id</dt>
+              <dd>
+                <code class="attendance-page__code attendance-page__code--id">{{ row.id }}</code>
+              </dd>
+            </div>
+          </dl>
+        </article>
+      }
+    </div>
+
+    <nav class="attendance-page__pager" aria-label="Pagination">
+      <app-button type="button" variant="secondary" [disabled]="!hasPrevious()" (clicked)="goPrev()">
+        Previous
+      </app-button>
+      <p class="attendance-page__pager-info">
+        Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+        <span> · {{ totalCount() }} total</span>
+      </p>
+      <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+        Next
+      </app-button>
+    </nav>
+  }
+</div>

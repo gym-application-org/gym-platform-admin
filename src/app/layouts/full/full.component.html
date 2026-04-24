@@ -1,0 +1,91 @@
+<div
+  class="shell"
+  [class.shell--nav-open]="navOpen()"
+  [attr.data-mobile-nav-open]="navOpen() ? 'true' : null"
+>
+  <aside class="shell__sidebar" id="app-shell-sidebar" aria-label="Application">
+    <div class="shell__brand">
+      <a routerLink="/dashboard" class="shell__brand-link" (click)="closeNav()">
+        <span class="shell__brand-mark" aria-hidden="true"></span>
+        <span class="shell__brand-text">
+          <span class="shell__brand-title">Gym Platform</span>
+          <span class="shell__brand-sub">Admin</span>
+        </span>
+      </a>
+      <button
+        type="button"
+        class="shell__sidebar-close"
+        aria-label="Close navigation"
+        (click)="closeNav()"
+      >
+        <span aria-hidden="true">×</span>
+      </button>
+    </div>
+
+    <nav class="shell__nav" aria-label="Main navigation">
+      @for (item of navItems(); track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="shell__nav-link--active"
+          [routerLinkActiveOptions]="{ exact: false }"
+          class="shell__nav-link"
+          (click)="closeNav()"
+        >
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <div class="shell__main">
+    <header class="shell__topbar">
+      <div class="shell__topbar-start">
+        <button
+          type="button"
+          class="shell__menu-btn"
+          (click)="toggleNav()"
+          [attr.aria-expanded]="navOpen()"
+          aria-controls="app-shell-sidebar"
+          aria-label="Open navigation menu"
+        >
+          <span class="shell__menu-icon" aria-hidden="true"></span>
+        </button>
+        <p class="shell__env-label">Console</p>
+      </div>
+
+      <div class="shell__topbar-end">
+        <div class="shell__user" role="group" aria-label="Account">
+          <div class="shell__user-text">
+            <span class="shell__user-name">{{ userLabel() }}</span>
+            @if (roleBadges().length) {
+              <span class="shell__user-roles">
+                @for (r of roleBadges(); track r) {
+                  <span class="shell__role-pill">{{ r }}</span>
+                }
+              </span>
+            }
+          </div>
+        </div>
+        <app-button
+          variant="secondary"
+          type="button"
+          [loading]="logoutLoading()"
+          [disabled]="logoutLoading()"
+          (clicked)="onLogout()"
+        >
+          Log out
+        </app-button>
+      </div>
+    </header>
+
+    <main class="shell__content" id="main-content">
+      <router-outlet />
+    </main>
+  </div>
+
+  <div
+    class="shell__scrim"
+    role="presentation"
+    (click)="closeNav()"
+  ></div>
+</div>

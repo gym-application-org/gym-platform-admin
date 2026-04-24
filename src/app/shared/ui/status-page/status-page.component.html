@@ -1,0 +1,12 @@
+<main class="status-page" role="main" aria-labelledby="status-page-title">
+  <div class="status-page__card">
+    @if (code(); as c) {
+      <p class="status-page__code" aria-hidden="true">{{ c }}</p>
+    }
+    <h1 id="status-page-title" class="status-page__title">{{ title() }}</h1>
+    <p class="status-page__lede">{{ description() }}</p>
+    <nav class="status-page__actions" [attr.aria-label]="actionsAriaLabel()">
+      <ng-content />
+    </nav>
+  </div>
+</main>

@@ -1,0 +1,17 @@
+<button
+  [type]="type()"
+  class="btn"
+  [class.btn--primary]="variant() === 'primary'"
+  [class.btn--secondary]="variant() === 'secondary'"
+  [class.btn--tertiary]="variant() === 'tertiary'"
+  [class.btn--danger]="variant() === 'danger'"
+  [disabled]="disabled() || loading()"
+  [attr.aria-busy]="loading() ? 'true' : null"
+  [attr.aria-disabled]="disabled() || loading() ? 'true' : null"
+  (click)="onClick($event)"
+>
+  @if (loading()) {
+    <span class="btn__spinner" aria-hidden="true"></span>
+  }
+  <ng-content />
+</button>

@@ -1,0 +1,296 @@
+<div class="staff-page">
+  <header class="staff-page__header">
+    <div class="staff-page__title-row">
+      <div class="staff-page__title-block">
+        <h1 class="staff-page__title">Staff</h1>
+        <p class="staff-page__subtitle">
+          Directory of staff across organizations. Filter by tenant, narrow the current page by
+          activity or search.
+        </p>
+      </div>
+      @if (!loading() && totalCount() > 0) {
+        <p class="staff-page__stat" aria-live="polite">
+          <span class="staff-page__stat-value">{{ totalCount() }}</span>
+          <span class="staff-page__stat-label">people</span>
+        </p>
+      }
+    </div>
+  </header>
+
+  <section class="staff-page__filters" aria-label="Filters">
+    <div class="staff-page__filters-inner">
+      <div class="staff-page__field">
+        <label class="staff-page__label" for="staff-filter-tenant">Organization</label>
+        <select
+          id="staff-filter-tenant"
+          class="staff-page__select"
+          [value]="filterTenantId()"
+          [disabled]="tenantsLoading()"
+          (change)="onTenantFilterChange($event)"
+          aria-describedby="staff-filter-tenant-hint"
+        >
+          <option value="">All organizations</option>
+          @for (opt of tenantOptions(); track opt.id) {
+            <option [value]="opt.id">{{ opt.name }}</option>
+          }
+        </select>
+        <p id="staff-filter-tenant-hint" class="staff-page__field-hint">
+          @if (tenantsLoading()) {
+            Loading organizations…
+          } @else {
+            Server filter (first 100 tenants loaded for this list).
+          }
+        </p>
+      </div>
+
+      <div class="staff-page__field">
+        <label class="staff-page__label" for="staff-filter-active">Activity</label>
+        <select
+          id="staff-filter-active"
+          class="staff-page__select"
+          [value]="filterActive()"
+          (change)="onActiveFilterChange($event)"
+          aria-describedby="staff-filter-active-hint"
+        >
+          <option value="">All on this page</option>
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+        </select>
+        <p id="staff-filter-active-hint" class="staff-page__field-hint">
+          Refines the loaded page only (not a server filter).
+        </p>
+      </div>
+
+      <div class="staff-page__field staff-page__field--grow">
+        <label class="staff-page__label" for="staff-search">Search</label>
+        <input
+          id="staff-search"
+          type="search"
+          class="staff-page__search-input"
+          placeholder="Name, email, role…"
+          [value]="searchQuery()"
+          (input)="onSearchInputEvent($event)"
+          autocomplete="off"
+          aria-describedby="staff-search-hint"
+        />
+        <p id="staff-search-hint" class="staff-page__field-hint">Current page of results.</p>
+      </div>
+
+      <div class="staff-page__field staff-page__field--compact">
+        <label class="staff-page__label" for="staff-page-size">Rows</label>
+        <select
+          id="staff-page-size"
+          class="staff-page__select"
+          [value]="pageSize()"
+          (change)="onPageSizeChange($event)"
+          aria-describedby="staff-page-size-hint"
+        >
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+        </select>
+        <p id="staff-page-size-hint" class="staff-page__field-hint">Per page</p>
+      </div>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="staff-page__state" role="status" aria-live="polite" aria-busy="true">
+      <div class="staff-page__skeleton-list" aria-hidden="true">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="staff-page__skeleton-row"></div>
+        }
+      </div>
+      <span class="sr-only">Loading staff</span>
+    </div>
+  } @else if (!filteredItems().length) {
+    <div class="staff-page__empty">
+      <p class="staff-page__empty-title">No staff to show</p>
+      <p class="staff-page__empty-text">
+        @if (searchQuery().trim() || filterActive()) {
+          Try clearing search or activity filter.
+        } @else {
+          Change tenant or page size, or verify data in the API.
+        }
+      </p>
+    </div>
+  } @else {
+    <div class="staff-page__table-wrap">
+      <table class="staff-page__table">
+        <thead>
+          <tr>
+            <th scope="col">Staff</th>
+            <th scope="col">Role</th>
+            <th scope="col">Contact</th>
+            <th scope="col">Organization</th>
+            <th scope="col">Status</th>
+            <th scope="col">Added</th>
+            <th scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of filteredItems(); track s.id) {
+            <tr>
+              <td data-label="Staff">
+                <span class="staff-page__name">{{ s.firstName }} {{ s.lastName }}</span>
+              </td>
+              <td data-label="Role">
+                <span class="staff-page__role">{{ s.role || '—' }}</span>
+              </td>
+              <td data-label="Contact">
+                <div class="staff-page__stack">
+                  <a class="staff-page__link" [href]="'mailto:' + s.email">{{ s.email }}</a>
+                  @if (s.phone) {
+                    <span class="staff-page__muted">{{ s.phone }}</span>
+                  }
+                </div>
+              </td>
+              <td data-label="Organization">
+                <span class="staff-page__tenant">{{ tenantLabel(s.tenantId) }}</span>
+              </td>
+              <td data-label="Status">
+                <span class="staff-page__badge" [class]="activeBadgeClass(s.isActive)">
+                  {{ s.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td data-label="Added">{{ s.createdAt | date: 'mediumDate' }}</td>
+              <td class="staff-page__actions">
+                <app-button type="button" variant="tertiary" (clicked)="openDetail(s)">
+                  View
+                </app-button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="staff-page__cards" role="list">
+      @for (s of filteredItems(); track s.id) {
+        <article class="staff-page__card" role="listitem">
+          <div class="staff-page__card-head">
+            <div>
+              <h2 class="staff-page__card-title">{{ s.firstName }} {{ s.lastName }}</h2>
+              <p class="staff-page__card-role">{{ s.role || '—' }}</p>
+            </div>
+            <span class="staff-page__badge" [class]="activeBadgeClass(s.isActive)">
+              {{ s.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          <dl class="staff-page__card-dl">
+            <div>
+              <dt>Email</dt>
+              <dd>
+                <a class="staff-page__link" [href]="'mailto:' + s.email">{{ s.email }}</a>
+              </dd>
+            </div>
+            @if (s.phone) {
+              <div>
+                <dt>Phone</dt>
+                <dd>{{ s.phone }}</dd>
+              </div>
+            }
+            <div>
+              <dt>Organization</dt>
+              <dd>{{ tenantLabel(s.tenantId) }}</dd>
+            </div>
+            <div>
+              <dt>Added</dt>
+              <dd>{{ s.createdAt | date: 'mediumDate' }}</dd>
+            </div>
+          </dl>
+          <div class="staff-page__card-actions">
+            <app-button type="button" variant="tertiary" (clicked)="openDetail(s)">View</app-button>
+          </div>
+        </article>
+      }
+    </div>
+
+    <nav class="staff-page__pager" aria-label="Pagination">
+      <app-button type="button" variant="secondary" [disabled]="!hasPrevious()" (clicked)="goPrev()">
+        Previous
+      </app-button>
+      <p class="staff-page__pager-info">
+        Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+        <span> · {{ totalCount() }} total</span>
+      </p>
+      <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+        Next
+      </app-button>
+    </nav>
+  }
+</div>
+
+<dialog
+  #detailDialog
+  class="staff-page__dialog"
+  aria-labelledby="detail-staff-title"
+  (click)="onDetailBackdrop($event)"
+>
+  <div class="staff-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="staff-page__dialog-head">
+      <h2 id="detail-staff-title" class="staff-page__dialog-title">Staff details</h2>
+      <button
+        type="button"
+        class="staff-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDetail()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="staff-page__dialog-body">
+      @if (detailLoading()) {
+        <p class="staff-page__detail-loading" role="status" aria-live="polite">Loading…</p>
+      } @else if (detailStaff(); as d) {
+        <dl class="staff-page__detail-dl">
+          <div>
+            <dt>Name</dt>
+            <dd>{{ d.firstName }} {{ d.lastName }}</dd>
+          </div>
+          <div>
+            <dt>Role</dt>
+            <dd>{{ d.role || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>
+              <a class="staff-page__link" [href]="'mailto:' + d.email">{{ d.email }}</a>
+            </dd>
+          </div>
+          <div>
+            <dt>Phone</dt>
+            <dd>{{ d.phone || '—' }}</dd>
+          </div>
+          <div>
+            <dt>Organization</dt>
+            <dd>{{ tenantLabel(d.tenantId) }}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <span class="staff-page__badge" [class]="activeBadgeClass(d.isActive)">
+                {{ d.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt>Added</dt>
+            <dd>{{ d.createdAt | date: 'medium' }}</dd>
+          </div>
+          <div>
+            <dt>Staff id</dt>
+            <dd><code class="staff-page__code staff-page__code--id">{{ d.id }}</code></dd>
+          </div>
+          <div>
+            <dt>Tenant id</dt>
+            <dd><code class="staff-page__code staff-page__code--id">{{ d.tenantId }}</code></dd>
+          </div>
+        </dl>
+      }
+      <footer class="staff-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDetail()">Close</app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>

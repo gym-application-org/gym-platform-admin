@@ -1,0 +1,511 @@
+<div class="users-page">
+  <header class="users-page__hero">
+    <div class="users-page__hero-text">
+      <p class="users-page__eyebrow">Accounts</p>
+      <h1 class="users-page__title">Users</h1>
+      <p class="users-page__subtitle">
+        Platform user accounts. Search applies to the current page. The Permissions action edits operation claims for
+        one user; open Roles &amp; claims in the bar above for JWT roles vs the claims catalog.
+      </p>
+    </div>
+    @if (canAdd()) {
+      <app-button type="button" variant="primary" (clicked)="openCreate()">Add user</app-button>
+    }
+  </header>
+
+  @if (!permissionsLoaded()) {
+    <div class="users-page__state" role="status" aria-live="polite" aria-busy="true">
+      <div class="users-page__skeleton-list" aria-hidden="true">
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="users-page__skeleton-row"></div>
+        }
+      </div>
+      <span class="sr-only">Loading</span>
+    </div>
+  } @else if (!canRead()) {
+    <section class="users-page__denied" aria-labelledby="users-denied-title">
+      <h2 id="users-denied-title" class="users-page__denied-title">No access</h2>
+      <p class="users-page__denied-text">
+        Your role does not include viewing users. Contact an administrator if you need access.
+      </p>
+    </section>
+  } @else {
+    <section class="users-page__toolbar" aria-label="List filters">
+      <div class="users-page__search">
+        <label class="users-page__label" for="user-search">Search</label>
+        <input
+          id="user-search"
+          type="search"
+          class="users-page__search-input"
+          placeholder="Name or email…"
+          [value]="searchQuery()"
+          (input)="onSearchInputEvent($event)"
+          autocomplete="off"
+          aria-describedby="user-search-hint"
+        />
+        <p id="user-search-hint" class="users-page__hint">Filters the loaded page only.</p>
+      </div>
+      <div class="users-page__page-size">
+        <label class="users-page__label" for="user-page-size">Rows per page</label>
+        <select
+          id="user-page-size"
+          class="users-page__select"
+          [value]="pageSize()"
+          (change)="onPageSizeChange($event)"
+        >
+          <option [value]="10">10</option>
+          <option [value]="25">25</option>
+          <option [value]="50">50</option>
+        </select>
+      </div>
+    </section>
+
+    @if (loading()) {
+      <div class="users-page__state" role="status" aria-live="polite" aria-busy="true">
+        <div class="users-page__skeleton-list" aria-hidden="true">
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <div class="users-page__skeleton-row"></div>
+          }
+        </div>
+        <span class="sr-only">Loading users</span>
+      </div>
+    } @else if (!filteredItems().length) {
+      <div class="users-page__empty">
+        <p class="users-page__empty-title">No users to show</p>
+        <p class="users-page__empty-text">
+          @if (searchQuery().trim()) {
+            Try clearing the search or change page.
+          } @else {
+            Add a user to get started.
+          }
+        </p>
+        @if (!searchQuery().trim() && canAdd()) {
+          <app-button type="button" variant="primary" (clicked)="openCreate()">Add user</app-button>
+        }
+      </div>
+    } @else {
+      <div class="users-page__table-wrap">
+        <table class="users-page__table">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of filteredItems(); track user.id) {
+              <tr>
+                <td data-label="Name">{{ displayName(user) }}</td>
+                <td data-label="Email">{{ user.email }}</td>
+                <td data-label="Status">
+                  @if (userStatusOn(user) !== null) {
+                    <span
+                      class="users-page__badge"
+                      [class.users-page__badge--on]="userStatusOn(user)"
+                      [class.users-page__badge--off]="userStatusOn(user) === false"
+                    >
+                      {{ userStatusLabel(user) }}
+                    </span>
+                  } @else {
+                    <span class="users-page__muted">{{ userStatusLabel(user) }}</span>
+                  }
+                </td>
+                <td class="users-page__actions">
+                  <app-button type="button" variant="tertiary" (clicked)="openDetail(user)">
+                    View
+                  </app-button>
+                  @if (canUpdate()) {
+                    <app-button type="button" variant="tertiary" (clicked)="openEdit(user)">
+                      Edit
+                    </app-button>
+                  }
+                  @if (canManageClaims()) {
+                    <app-button type="button" variant="tertiary" (clicked)="openClaims(user)">
+                      Permissions
+                    </app-button>
+                  }
+                  @if (canDelete()) {
+                    <app-button type="button" variant="danger" (clicked)="confirmDelete(user)">
+                      Delete
+                    </app-button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="users-page__cards" role="list">
+        @for (user of filteredItems(); track user.id) {
+          <article class="users-page__card" role="listitem">
+            <div class="users-page__card-head">
+              <h2 class="users-page__card-title">{{ displayName(user) }}</h2>
+              @if (userStatusOn(user) !== null) {
+                <span
+                  class="users-page__badge"
+                  [class.users-page__badge--on]="userStatusOn(user)"
+                  [class.users-page__badge--off]="userStatusOn(user) === false"
+                >
+                  {{ userStatusLabel(user) }}
+                </span>
+              }
+            </div>
+            <dl class="users-page__card-dl">
+              <div>
+                <dt>Email</dt>
+                <dd>{{ user.email }}</dd>
+              </div>
+            </dl>
+            <div class="users-page__card-actions">
+              <app-button type="button" variant="tertiary" (clicked)="openDetail(user)">
+                View
+              </app-button>
+              @if (canUpdate()) {
+                <app-button type="button" variant="tertiary" (clicked)="openEdit(user)">
+                  Edit
+                </app-button>
+              }
+              @if (canManageClaims()) {
+                <app-button type="button" variant="tertiary" (clicked)="openClaims(user)">
+                  Permissions
+                </app-button>
+              }
+              @if (canDelete()) {
+                <app-button type="button" variant="danger" (clicked)="confirmDelete(user)">
+                  Delete
+                </app-button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+
+      <nav class="users-page__pager" aria-label="Pagination">
+        <app-button
+          type="button"
+          variant="secondary"
+          [disabled]="!hasPrevious()"
+          (clicked)="goPrev()"
+        >
+          Previous
+        </app-button>
+        <p class="users-page__pager-info">
+          Page {{ pageIndex() + 1 }} of {{ totalPages() || 1 }}
+          <span> · {{ totalCount() }} total</span>
+        </p>
+        <app-button type="button" variant="secondary" [disabled]="!hasNext()" (clicked)="goNext()">
+          Next
+        </app-button>
+      </nav>
+    }
+  }
+</div>
+
+<!-- Create -->
+<dialog
+  #createDialog
+  class="users-page__dialog"
+  aria-labelledby="create-user-title"
+  (click)="onCreateBackdrop($event)"
+>
+  <div class="users-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="users-page__dialog-head">
+      <h2 id="create-user-title" class="users-page__dialog-title">New user</h2>
+      <button
+        type="button"
+        class="users-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeCreate()"
+      >
+        ×
+      </button>
+    </header>
+    <form class="users-page__dialog-body" [formGroup]="createForm" (ngSubmit)="submitCreate()">
+      <app-text-field
+        formControlName="firstName"
+        label="First name"
+        [required]="true"
+        [error]="createFieldError('firstName')"
+        autocomplete="given-name"
+      />
+      <app-text-field
+        formControlName="lastName"
+        label="Last name"
+        [required]="true"
+        [error]="createFieldError('lastName')"
+        autocomplete="family-name"
+      />
+      <app-text-field
+        formControlName="email"
+        label="Email"
+        type="email"
+        [required]="true"
+        [error]="createFieldError('email')"
+        autocomplete="email"
+      />
+      <app-text-field
+        formControlName="password"
+        label="Password"
+        type="password"
+        [required]="true"
+        [error]="createFieldError('password')"
+        hint="Minimum 6 characters."
+        autocomplete="new-password"
+      />
+      <footer class="users-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeCreate()">Cancel</app-button>
+        <app-button
+          type="submit"
+          variant="primary"
+          [loading]="createSubmitting()"
+          [disabled]="createSubmitting()"
+        >
+          Create
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<!-- Edit -->
+<dialog
+  #editDialog
+  class="users-page__dialog"
+  aria-labelledby="edit-user-title"
+  (click)="onEditBackdrop($event)"
+>
+  <div class="users-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="users-page__dialog-head">
+      <h2 id="edit-user-title" class="users-page__dialog-title">Edit user</h2>
+      <button
+        type="button"
+        class="users-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeEdit()"
+      >
+        ×
+      </button>
+    </header>
+    <form class="users-page__dialog-body" [formGroup]="editForm" (ngSubmit)="submitEdit()">
+      <app-text-field
+        formControlName="firstName"
+        label="First name"
+        [required]="true"
+        [error]="editFieldError('firstName')"
+        autocomplete="given-name"
+      />
+      <app-text-field
+        formControlName="lastName"
+        label="Last name"
+        [required]="true"
+        [error]="editFieldError('lastName')"
+        autocomplete="family-name"
+      />
+      <app-text-field
+        formControlName="email"
+        label="Email"
+        type="email"
+        [required]="true"
+        [error]="editFieldError('email')"
+        autocomplete="email"
+      />
+      <app-text-field
+        formControlName="password"
+        label="New password"
+        type="password"
+        [error]="editFieldError('password')"
+        hint="Leave blank to keep the current password."
+        autocomplete="new-password"
+      />
+      <footer class="users-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeEdit()">Cancel</app-button>
+        <app-button
+          type="submit"
+          variant="primary"
+          [loading]="editSubmitting()"
+          [disabled]="editSubmitting()"
+        >
+          Save
+        </app-button>
+      </footer>
+    </form>
+  </div>
+</dialog>
+
+<!-- Detail -->
+<dialog
+  #detailDialog
+  class="users-page__dialog"
+  aria-labelledby="detail-user-title"
+  (click)="onDetailBackdrop($event)"
+>
+  <div class="users-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="users-page__dialog-head">
+      <h2 id="detail-user-title" class="users-page__dialog-title">User details</h2>
+      <button
+        type="button"
+        class="users-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDetail()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="users-page__dialog-body">
+      @if (detailLoading()) {
+        <p class="users-page__detail-loading" role="status" aria-live="polite">Loading…</p>
+      } @else if (detailUser(); as u) {
+        <dl class="users-page__detail-dl">
+          <div>
+            <dt>Name</dt>
+            <dd>{{ displayName(u) }}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>{{ u.email }}</dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              @if (userStatusOn(u) !== null) {
+                <span
+                  class="users-page__badge"
+                  [class.users-page__badge--on]="userStatusOn(u)"
+                  [class.users-page__badge--off]="userStatusOn(u) === false"
+                >
+                  {{ userStatusLabel(u) }}
+                </span>
+              } @else {
+                <span class="users-page__muted">{{ userStatusLabel(u) }}</span>
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>User id</dt>
+            <dd><code class="users-page__code">{{ u.id }}</code></dd>
+          </div>
+        </dl>
+      }
+      <footer class="users-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDetail()">Close</app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>
+
+<!-- Delete -->
+<dialog
+  #deleteDialog
+  class="users-page__dialog users-page__dialog--narrow"
+  aria-labelledby="delete-user-title"
+  aria-describedby="delete-user-desc"
+  (click)="onDeleteBackdrop($event)"
+>
+  <div class="users-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="users-page__dialog-head">
+      <h2 id="delete-user-title" class="users-page__dialog-title">Delete user</h2>
+      <button
+        type="button"
+        class="users-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeDelete()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="users-page__dialog-body">
+      <p id="delete-user-desc" class="users-page__delete-text">
+        @if (userPendingDelete(); as del) {
+          Permanently remove <strong>{{ displayName(del) }}</strong> ({{ del.email }})? This cannot be undone.
+        }
+      </p>
+      <footer class="users-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeDelete()">Cancel</app-button>
+        <app-button
+          type="button"
+          variant="danger"
+          [loading]="deleteSubmitting()"
+          [disabled]="deleteSubmitting()"
+          (clicked)="submitDelete()"
+        >
+          Delete
+        </app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>
+
+<!-- Permissions -->
+<dialog
+  #claimsDialog
+  class="users-page__dialog users-page__dialog--wide"
+  aria-labelledby="claims-title"
+  (click)="onClaimsBackdrop($event)"
+>
+  <div class="users-page__dialog-panel" (click)="$event.stopPropagation()">
+    <header class="users-page__dialog-head">
+      <h2 id="claims-title" class="users-page__dialog-title">Operation claims</h2>
+      <button
+        type="button"
+        class="users-page__dialog-close"
+        aria-label="Close dialog"
+        (click)="closeClaims()"
+      >
+        ×
+      </button>
+    </header>
+    <div class="users-page__dialog-body users-page__claims-body">
+      @if (claimsLoading()) {
+        <p role="status" aria-live="polite" class="users-page__detail-loading">Loading permissions…</p>
+      } @else {
+        <p id="claims-desc" class="users-page__dialog-note">
+          Select the operation claims to assign to this user. Use search to narrow the list.
+        </p>
+        <div class="users-page__claims-search">
+          <label class="users-page__label" for="claims-filter">Filter claims</label>
+          <input
+            id="claims-filter"
+            type="search"
+            class="users-page__search-input"
+            placeholder="Name or id…"
+            [value]="claimsSearchQuery()"
+            (input)="onClaimsSearchInput($event)"
+            autocomplete="off"
+            aria-describedby="claims-desc"
+          />
+        </div>
+        <ul class="users-page__claims-list" role="list" aria-label="Operation claims">
+          @for (claim of filteredClaims(); track claim.id) {
+            <li class="users-page__claims-item">
+              <label class="users-page__claims-label">
+                <input
+                  type="checkbox"
+                  class="users-page__claims-checkbox"
+                  [checked]="isClaimSelected(claim.id)"
+                  (change)="onClaimCheckboxChange(claim.id, $event)"
+                />
+                <span class="users-page__claims-name">{{ claim.name }}</span>
+                <span class="users-page__claims-id"><code class="users-page__code">#{{ claim.id }}</code></span>
+              </label>
+            </li>
+          }
+        </ul>
+      }
+      <footer class="users-page__dialog-footer">
+        <app-button type="button" variant="secondary" (clicked)="closeClaims()">Cancel</app-button>
+        <app-button
+          type="button"
+          variant="primary"
+          [loading]="claimsSaving()"
+          [disabled]="claimsSaving() || claimsLoading()"
+          (clicked)="saveClaims()"
+        >
+          Save permissions
+        </app-button>
+      </footer>
+    </div>
+  </div>
+</dialog>

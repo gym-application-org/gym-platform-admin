@@ -1,0 +1,33 @@
+<div class="field">
+  @if (label()) {
+    <label class="field__label" [for]="controlId()">
+      {{ label() }}
+      @if (required()) {
+        <span class="field__required" aria-hidden="true">*</span>
+        <span class="sr-only">required</span>
+      }
+    </label>
+  }
+  <input
+    class="field__control"
+    [id]="controlId()"
+    [type]="type()"
+    [attr.inputmode]="inputMode() ?? null"
+    [attr.autocomplete]="autocomplete()"
+    [placeholder]="placeholder()"
+    [required]="required()"
+    [disabled]="isDisabled()"
+    [value]="value()"
+    [attr.aria-required]="required() ? 'true' : null"
+    [attr.aria-invalid]="error() ? 'true' : null"
+    [attr.aria-describedby]="describedBy()"
+    (input)="onInput($event)"
+    (blur)="onBlur()"
+  />
+  @if (hint() && !error()) {
+    <p class="field__hint" [id]="hintId()">{{ hint() }}</p>
+  }
+  @if (error()) {
+    <p class="field__error" [id]="errorId()" role="alert">{{ error() }}</p>
+  }
+</div>

@@ -1,0 +1,109 @@
+$bp-table: 600px;
+
+.urr-page {
+  color: var(--app-fg-default);
+  font-family: var(--app-font-sans);
+}
+
+.urr-page__title {
+  margin: 0 0 1rem;
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.urr-page__panel {
+  margin-bottom: 1.5rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--app-border-default);
+  border-radius: 0.75rem;
+  background: var(--app-canvas-default);
+  box-shadow: 0 1px 2px var(--app-shadow-color);
+}
+
+.urr-page__h3 {
+  margin: 0 0 0.75rem;
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+}
+
+.urr-page__list {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--app-fg-default);
+
+  li {
+    margin-bottom: 0.6rem;
+  }
+
+  strong {
+    font-weight: var(--font-weight-semibold);
+  }
+}
+
+.urr-page__note {
+  margin: 0;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--app-canvas-subtle);
+  border-left: 3px solid var(--app-accent-fg);
+  font-size: var(--text-sm);
+  color: var(--app-fg-muted);
+  line-height: var(--leading-relaxed);
+}
+
+.urr-page__intro {
+  margin: 0 0 1rem;
+  font-size: var(--text-sm);
+  color: var(--app-fg-muted);
+  line-height: var(--leading-relaxed);
+}
+
+.urr-page__code {
+  font-family: var(--app-font-mono);
+  font-size: 0.85em;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  background: var(--app-canvas-subtle);
+  word-break: break-word;
+}
+
+.urr-page__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--app-border-muted);
+  border-radius: 0.5rem;
+}
+
+.urr-page__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.urr-page__table th {
+  text-align: start;
+  padding: 0.6rem 0.85rem;
+  background: var(--app-canvas-subtle);
+  border-bottom: 1px solid var(--app-border-default);
+  color: var(--app-fg-muted);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.urr-page__table td {
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--app-border-muted);
+  vertical-align: top;
+}
+
+.urr-page__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+@media (max-width: $bp-table) {
+  .urr-page__table th:nth-child(2),
+  .urr-page__table td:nth-child(2) {
+    min-width: 12rem;
+  }
+}
